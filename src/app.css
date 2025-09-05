@@ -221,8 +221,6 @@ html {
 .logo {
   height: 40px;
   width: auto;
-  cursor: pointer;
-  transition: transform 0.2s ease;
 }
 
 .header nav {

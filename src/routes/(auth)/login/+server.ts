@@ -58,7 +58,7 @@ export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddre
 				ip_address: ip
 			})
 		} catch (error) {
-			const msg = "one device cannot have multiple accounts. this is to prevent cheating";
+			const msg = "another account detected on this device. this is to prevent cheating";
 			throw redirect(302, '/?error=auth_failed&message=' + encodeURIComponent(msg));
 		}
 		throw redirect(302, redirectTo || '/');

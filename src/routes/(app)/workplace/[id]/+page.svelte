@@ -125,6 +125,13 @@
             currentEmail = '';
         }
     }
+
+    function handleSubmit(event) {
+        if (!selectedFile) {
+            event.preventDefault();
+            alert('Please select a spreadsheet file before submitting.');
+        }
+    }
 </script>
 
 {#if data.id && data.id != "new"}
@@ -134,18 +141,17 @@
     </form>
 </div>
 {/if}
-<form action="?/upsert" method="POST">
+<form action="?/upsert" method="POST" on:submit={handleSubmit}>
     <div class="form-question">
         <label class="question-title" for="name">Workplace Name:</label>
         <input class="question-input" id="name" name="name" maxlength="255" required value={workplace?.name || ''} placeholder="Enter workplace name" />
     </div>
 
     <div class="form-question">
-        <label class="question-title" for="file_id">Select Spreadsheet:</label>
-        <button class="btn-secondary" type="button" on:click={() => showPicker = true}>Select File</button>
-        {#if selectedFile}
-            <p>Selected: {selectedFile.name}</p>
-        {/if}
+        <label class="question-title" for="file_id">Link Spreadsheet:</label>
+        <button class="btn-secondary" on:click={() => showPicker = true}>
+            {#if selectedFile} Selected {:else} Select {/if}
+        </button>
     </div>
 
     {#if showPicker}
@@ -169,10 +175,8 @@
     <input type="hidden" name="file_id" value={selectedFile?.id || ''} />
     <input type="hidden" name="rules" value={JSON.stringify(rules)} />
 
-    <h2>Add employees</h2>
-    <p>Remaining spots: {Math.max(0, data.free_spot - emails.length)} of {data.free_spot}</p>
     <div class="form-question">
-        <label class="question-title" for="email">Email:</label>
+        <label class="question-title" for="email">Remaining: {Math.max(0, data.free_spot - emails.length)} of {data.free_spot}</label>
         <input
             class="question-input"
             id="email"
