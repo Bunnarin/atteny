@@ -4,6 +4,7 @@
 
     let locationError = '';
     let successMessage = '';
+    let copiedWorkplaceId = null; 
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371000; // Radius of the earth in m
@@ -22,7 +23,10 @@
         return deg * (Math.PI / 180);
     }
 
+    let clockingIn = false;
+
     function clockIn(workplace) {
+        clockingIn = true;
         locationError = '';
         successMessage = '';
 
@@ -53,6 +57,12 @@
             }
         );
     }
+
+    function copy_link(workplace) {
+        navigator.clipboard.writeText(`${window.location.origin}/subscribe/${workplace.id}`);
+        // change the button to copied
+        copiedWorkplaceId = workplace.id;
+    }
 </script>
 
 {#if data.user}
@@ -61,30 +71,48 @@
 </div>
 
 <div>
+    {#if data.workplaces_as_employer.length > 0}
     <h1 class="form-title">Workplaces (as employer)</h1>
-    <ul>
-        {#each data.workplaces_as_employer as workplace}
-            <li><a href={`/workplace/${workplace.id}`}>{workplace.name}</a></li>
-        {/each}
-    </ul>
+    {#each data.workplaces_as_employer as workplace}
+        <div class="form-section">
+            <h2>{workplace.name}</h2>
+            <button class="btn-primary" on:click={() => goto(`/workplace/${workplace.id}`)}>Edit</button>
+            <button class="btn-primary" on:click={() => copy_link(workplace)}>
+                {copiedWorkplaceId === workplace.id ? 'Copied!' : 'Invite Link'}
+            </button>
+        </div>
+    {/each}
+    {/if}
 </div>
 
 <div>
+    {#if data.workplaces_as_employee.length > 0}
     <h1 class="form-title">Workplaces (as employee)</h1>
     {#if locationError}
         <div class="error">{locationError}</div>
     {/if}
 
     {#if successMessage}
+        <script>
+            clockingIn = false;
+        </script>
         <div class="success">{successMessage}</div>
     {/if}
 
     {#each data.workplaces_as_employee as workplace}
         <div class="form-section">
             <h2>{workplace.name}</h2>
-            <p>Proximity: {workplace.proximity} m</p>
-            <button class="btn-primary" on:click={() => clockIn(workplace)}>Clock In</button>
+            <button class="btn-primary" on:click={() => clockIn(workplace)}>
+                {#if !locationError && !successMessage && !clockingIn}
+                    Clock In
+                {:else if clockingIn}
+                    Clocking In...
+                {:else if locationError || successMessage}
+                    Clock In
+                {/if}
+            </button>
         </div>
     {/each}
+    {/if}
 </div>
 {/if}
