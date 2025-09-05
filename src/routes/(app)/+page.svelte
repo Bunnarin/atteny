@@ -103,11 +103,9 @@
         <div class="form-section">
             <h2>{workplace.name}</h2>
             <button class="btn-primary" on:click={() => clockIn(workplace)}>
-                {#if !locationError && !successMessage && !clockingIn}
-                    Clock In
-                {:else if clockingIn}
+                {#if clockingIn && !locationError && !successMessage}
                     Clocking In...
-                {:else if locationError || successMessage}
+                {:else}
                     Clock In
                 {/if}
             </button>

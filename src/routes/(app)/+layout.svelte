@@ -1,22 +1,20 @@
 <script lang="ts">
 	import '../../app.css';
 	import type { LayoutServerData } from './$types';
-
+	import { goto } from '$app/navigation';
 	export let data: LayoutServerData;
 	
 </script>
 
 <main class="form-container">
 	<div class="header">
-		<a href="/">Home</a>
+		<button class="btn-primary" on:click={() => goto('/')}>Home</button>
 		{#if data.user}
 			<div class="user">
 				<p>Employees: {data.user.current_employees}/{data.user.max_employees}</p>
-				<a href="/payway">Buy More</a>
+				<button class="btn-primary" on:click={() => goto('/payway')}>Buy More</button>
 				<h2>{data.user.full_name}</h2>
-				<form action="/logout" method="POST">
-					<button class="btn-secondary" type="submit">Logout</button>
-				</form>
+				<button class="btn-secondary" on:click={() => goto('/logout')}>Logout</button>
 			</div>
 		{:else}
 			<a href="/oauth" class="btn-primary">Login</a>

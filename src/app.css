@@ -285,6 +285,7 @@ html {
 
 .form-actions {
   margin-bottom: 32px;
+  padding: 1rem 1.5rem;
 }
 
 .form-question {

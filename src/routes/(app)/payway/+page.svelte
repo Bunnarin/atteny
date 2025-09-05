@@ -4,13 +4,12 @@
 </script>
 
 <form method="POST">
-    <input type="number" name="amount" required min="1"/>
-    <button type="submit">Pay</button>
+    <div class="form-question">
+        <label class="question-title" for="amount">Amount:</label>
+        <input class="question-input" type="number" min="1" required />
+    </div>
+    <button class="btn-primary" type="submit">Pay</button>
 </form>
 
-{#if form?.html}
-    <iframe srcdoc={form.html} width="100%" height="600" title="PayWay Checkout"></iframe>
-{:else if form?.error}
-    <p>Error: {form.error}</p>
-{/if}
+
 
