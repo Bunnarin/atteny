@@ -11,7 +11,35 @@ const oauthClient = new OAuth2Client({
 export const POST = async ({ request, locals }) => {
     try {
         // get the timezone
-        const { file_id, name, employer } = await request.json();
+        const { file_id, name, employer, workplace_id } = await request.json();
+
+        // Get workplace rules for time validation
+        const workplace = await locals.pb.collection('workplace').getOne(workplace_id);
+
+        // Check time restrictions
+        if (workplace.rules && workplace.rules.length > 0) {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+
+            const isWithinTimeWindow = workplace.rules.some(rule => {
+                const startTime = rule.start.split(':').map(Number);
+                const endTime = rule.end.split(':').map(Number);
+                const startMinutes = startTime[0] * 60 + startTime[1];
+                const endMinutes = endTime[0] * 60 + endTime[1];
+
+                if (startMinutes <= endMinutes) {
+                    // Same day window
+                    return currentTime >= startMinutes && currentTime <= endMinutes;
+                } else {
+                    // Overnight window
+                    return currentTime >= startMinutes || currentTime <= endMinutes;
+                }
+            });
+
+            if (!isWithinTimeWindow) {
+                return new Response(JSON.stringify({ error: 'Clock-in is not allowed at this time. Please check your workplace time rules.' }), { status: 403 });
+            }
+        }
         oauthClient.credentials.access_token = employer.google_access_token;
         oauthClient.credentials.refresh_token = employer.google_refresh_token;
         // force expire to avoid the real expiration since I dont store it

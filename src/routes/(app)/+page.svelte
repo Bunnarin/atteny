@@ -23,9 +23,39 @@
         return deg * (Math.PI / 180);
     }
 
+    function isWithinTimeWindow(rules) {
+        if (!rules || rules.length === 0) {
+            return true; // 24/7 access if no rules
+        }
+
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+
+        return rules.some(rule => {
+            const startTime = rule.start.split(':').map(Number);
+            const endTime = rule.end.split(':').map(Number);
+            const startMinutes = startTime[0] * 60 + startTime[1];
+            const endMinutes = endTime[0] * 60 + endTime[1];
+
+            if (startMinutes <= endMinutes) {
+                // Same day window
+                return currentTime >= startMinutes && currentTime <= endMinutes;
+            } else {
+                // Overnight window (e.g., 22:00 to 06:00)
+                return currentTime >= startMinutes || currentTime <= endMinutes;
+            }
+        });
+    }
+
     let clockingIn = false;
 
     function clockIn(workplace) {
+        // Check time restrictions first
+        if (!isWithinTimeWindow(workplace.rules)) {
+            alert('Clock-in is not allowed at this time. Please check your workplace time rules.');
+            return;
+        }
+
         clockingIn = true;
         locationError = '';
         successMessage = '';
@@ -44,7 +74,7 @@
                     fetch('/api/clock-in', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ file_id: workplace.file_id, name: workplace.name, employer: workplace.expand.employer }),
+                        body: JSON.stringify({ file_id: workplace.file_id, name: workplace.name, employer: workplace.expand.employer, workplace_id: workplace.id }),
                     })
                     .then(response => response.json())
                     .then(data => successMessage = `Successfully clocked in to ${workplace.name}! Distance: ${distance.toFixed(2)} m`)
@@ -102,7 +132,12 @@
     {#each data.workplaces_as_employee as workplace}
         <div class="form-section">
             <h2>{workplace.name}</h2>
-            <button class="btn-primary" on:click={() => clockIn(workplace)}>
+            <button
+                class="btn-primary"
+                class:disabled={!isWithinTimeWindow(workplace.rules)}
+                on:click={() => clockIn(workplace)}
+                disabled={!isWithinTimeWindow(workplace.rules)}
+            >
                 {#if clockingIn && !locationError && !successMessage}
                     Clocking In...
                 {:else}
