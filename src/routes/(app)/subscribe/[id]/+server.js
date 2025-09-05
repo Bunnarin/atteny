@@ -3,7 +3,7 @@ import { redirect } from "@sveltejs/kit";
 export const GET = async ({ locals, params }) => {
     // if not authenitcalted, redirect to login, and then come back here
     if (!locals.user) {
-        throw redirect(302, '/oauth?redirect=/subscribe/' + params.id);
+        throw redirect(302, '/login?redirect=/subscribe/' + params.id);
     }
     locals.pb.collection('workplace').update(
         params.id,

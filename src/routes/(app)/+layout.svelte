@@ -3,7 +3,20 @@
 	import type { LayoutServerData } from './$types';
 	import { goto } from '$app/navigation';
 	export let data: LayoutServerData;
-	
+	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+
+	$: error = $page.url.searchParams.get('error');
+	$: message = $page.url.searchParams.get('message');
+
+	onMount(() => {
+		if (error && message) {
+		// Show the error message to the user (using an alert for simplicity)
+		alert(decodeURIComponent(message));
+		// Optionally clear the URL after showing the message
+		window.history.replaceState({}, '', '/');
+		}
+	});
 </script>
 
 <main class="form-container">
@@ -17,7 +30,7 @@
 				<button class="btn-secondary" on:click={() => goto('/logout')}>Logout</button>
 			</div>
 		{:else}
-			<a href="/oauth" class="btn-primary">Login</a>
+			<a href="/login" class="btn-primary">Login</a>
 		{/if}
 	</div>
 	<slot />

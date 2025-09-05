@@ -1,64 +1,114 @@
-import { PUBLIC_REDIRECT_URI } from '$env/static/public';
-import { error, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import type { AuthProviderInfo } from 'pocketbase';
+import { PUBLIC_REDIRECT_URI } from '$env/static/public';
 
-export const GET: RequestHandler = async ({ locals, url, cookies }) => {
-	const provider: AuthProviderInfo | undefined = JSON.parse(cookies.get('provider') || 'null');
-	if (!provider) throw error(400, 'Missing provider');
+export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddress }) => {
+	if (url.searchParams.has('code')) {
+		const code = url.searchParams.get('code')!;
+		const state = url.searchParams.get('state')!;
+		const providerCookie = cookies.get('provider');
+		if (!providerCookie) {
+			throw redirect(302, '/login?error=no_provider');
+		}
+		const provider = JSON.parse(providerCookie);
+		
+		// Extract the original state and redirect URL from the state parameter
+		const [stateParam, encodedRedirect] = state.includes(':') 
+			? state.split(':') 
+			: [state, ''];
 
-	const code = url.searchParams.get('code');
-	const state = url.searchParams.get('state');
+		if (stateParam !== provider.state) {
+			throw redirect(302, '/login?error=invalid_state');
+		}
 
-	if (!code || !state) {
-		throw error(400, 'Missing code or state');
-	}
+		// init the ip to put into create_record
+		const ip = getClientAddress();
+		// Decode the redirect URL if it exists
+		const redirectTo = encodedRedirect ? decodeURIComponent(encodedRedirect) : '';
 
-	// Extract the original state and redirect URL from the state parameter
-	const [stateParam, encodedRedirect] = state.includes(':') 
-		? state.split(':')
-		: [state, ''];
-
-	if (stateParam !== provider.state) {
-		throw error(400, 'Invalid state');
-	}
-
-	// Decode the redirect URL if it exists
-	const redirectTo = encodedRedirect ? decodeURIComponent(encodedRedirect) : '';
-
-	// clear the cookie after use
-	cookies.delete('provider', { path: '/' });
-
-	const { meta, record } = await locals.pb.collection('users')
-		.authWithOAuth2Code(provider.name, code, provider.codeVerifier, PUBLIC_REDIRECT_URI, { 
-			max_employees: 10, 
-			emailVisibility: true 
-		});
-	// if new user
-	if (!record.refresh_token) {
-		await locals.pb.collection('workplace_invite').getFullList({
-			filter: `email = "${record.email}"`,
-			expand: 'workplace'  // Make sure to expand the workplace relation
-		})
-		.then(async (invites) => {
-			for (const invite of invites) {
-				await locals.pb.collection('workplace').update(invite.workplace, {
-					'employees+': record.id
-				});
-				await locals.pb.collection('workplace_invite').delete(invite.id);
+		// Update user record with Google tokens and ip address if they exist
+		try {
+			const { record, meta } = await locals.pb.collection('users').authWithOAuth2Code(
+				provider.name, 
+				code, 
+				provider.codeVerifier, 
+				PUBLIC_REDIRECT_URI,
+				{ 
+					max_employees: 10, 
+					emailVisibility: true,
+					ip_address: ip
+				}
+			);
+			// if new user
+			if (!record.refresh_token) {
+				await locals.pb.collection('workplace_invite').getFullList({
+					filter: `email = "${record.email}"`,
+					expand: 'workplace'  // Make sure to expand the workplace relation
+				})
+				.then(async (invites) => invites.forEach(async (invite) => {
+					await locals.pb.collection('workplace').update(invite.workplace, {
+						'employees+': record.id
+					});
+					locals.pb.collection('workplace_invite').delete(invite.id);
+				}));
 			}
+			locals.pb.collection('users').update(record.id, {
+				google_access_token: meta.accessToken,
+				google_refresh_token: meta.refreshToken,
+				ip_address: ip
+			})
+		} catch (error) {
+			const msg = "one device cannot have multiple accounts. this is to prevent cheating";
+			throw redirect(302, '/?error=auth_failed&message=' + encodeURIComponent(msg));
+		}
+		throw redirect(302, redirectTo || '/');
+	} else if (url.searchParams.has('error')) {
+		const error = url.searchParams.get('error') || 'unknown_error';
+		throw redirect(302, '/login?error=' + error);
+	} else {
+		const redirectTo = url.searchParams.get('redirect');
+		const authMethods = await locals.pb.collection('users').listAuthMethods();
+		const [provider] = authMethods.oauth2.providers;
+		let authUrl = provider.authURL;
+		const urlObj = new URL(authUrl);
+		
+		// Set the base redirect_uri without any query parameters
+		const baseRedirectUri = new URL(PUBLIC_REDIRECT_URI);
+		
+		// Add the redirect parameter to the state parameter instead of redirect_uri
+		const state = redirectTo 
+			? `${provider.state}:${encodeURIComponent(redirectTo)}`
+			: provider.state;
+		
+		urlObj.searchParams.set('redirect_uri', baseRedirectUri.toString());
+		urlObj.searchParams.set('state', state);
+		urlObj.searchParams.set('access_type', 'offline');
+		urlObj.searchParams.set('prompt', 'consent');
+		
+		const scope = urlObj.searchParams.get('scope');
+		if (scope && !scope.includes('https://www.googleapis.com/auth/drive.file')) {
+			const newScope = scope + ' https://www.googleapis.com/auth/drive.file';
+			urlObj.searchParams.set('scope', newScope);
+		}
+		authUrl = urlObj.toString();
+
+		cookies.set(
+			'provider',
+			JSON.stringify({
+				state: provider.state,
+				name: provider.name,
+				codeVerifier: provider.codeVerifier,
+				codeChallenge: provider.codeChallenge,
+				codeChallengeMethod: provider.codeChallengeMethod,
+			}),
+			{ path: '/' }
+		);
+
+		return new Response(null, {
+			status: 302,
+			headers: {
+				location: authUrl,
+			},
 		});
 	}
-
-	// Update user record with Google tokens if they exist
-	if (meta?.accessToken && meta?.refreshToken) {
-		await locals.pb.collection('users').update(record.id, {
-			google_access_token: meta.accessToken,
-			google_refresh_token: meta.refreshToken,
-		});
-	}
-
-	// Use the decoded redirect URL or fall back to the query parameter or root
-	const redirectUrl = redirectTo || url.searchParams.get('redirect') || '/';
-	throw redirect(302, redirectUrl);
 };
