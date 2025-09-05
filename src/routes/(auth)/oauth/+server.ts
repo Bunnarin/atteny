@@ -11,12 +11,27 @@ export const GET: RequestHandler = async ({ cookies, locals, url }) => {
 			throw redirect(302, '/login?error=no_provider');
 		}
 		const provider = JSON.parse(providerCookie);
-		if (state !== provider.state) {
+		
+		// Extract the original state and redirect URL from the state parameter
+		const [stateParam, encodedRedirect] = state.includes(':') 
+			? state.split(':') 
+			: [state, ''];
+
+		if (stateParam !== provider.state) {
 			throw redirect(302, '/login?error=invalid_state');
 		}
+
+		// Decode the redirect URL if it exists
+		const redirectTo = encodedRedirect ? decodeURIComponent(encodedRedirect) : '';
+
 		try {
-			await locals.pb.collection('users').authWithOAuth2Code(provider.name, code, provider.codeVerifier, PUBLIC_REDIRECT_URI);
-			throw redirect(302, '/');
+			await locals.pb.collection('users').authWithOAuth2Code(
+				provider.name, 
+				code, 
+				provider.codeVerifier, 
+				PUBLIC_REDIRECT_URI
+			);
+			throw redirect(302, redirectTo || '/');
 		} catch (error) {
 			console.error('OAuth error:', error);
 			throw redirect(302, '/login?error=oauth_failed');
@@ -25,13 +40,25 @@ export const GET: RequestHandler = async ({ cookies, locals, url }) => {
 		const error = url.searchParams.get('error') || 'unknown_error';
 		throw redirect(302, '/login?error=' + error);
 	} else {
+		const redirectTo = url.searchParams.get('redirect');
 		const authMethods = await locals.pb.collection('users').listAuthMethods();
 		const [provider] = authMethods.oauth2.providers;
 		let authUrl = provider.authURL;
 		const urlObj = new URL(authUrl);
-		urlObj.searchParams.set('redirect_uri', PUBLIC_REDIRECT_URI);
+		
+		// Set the base redirect_uri without any query parameters
+		const baseRedirectUri = new URL(PUBLIC_REDIRECT_URI);
+		
+		// Add the redirect parameter to the state parameter instead of redirect_uri
+		const state = redirectTo 
+			? `${provider.state}:${encodeURIComponent(redirectTo)}`
+			: provider.state;
+		
+		urlObj.searchParams.set('redirect_uri', baseRedirectUri.toString());
+		urlObj.searchParams.set('state', state);
 		urlObj.searchParams.set('access_type', 'offline');
 		urlObj.searchParams.set('prompt', 'consent');
+		
 		const scope = urlObj.searchParams.get('scope');
 		if (scope && !scope.includes('https://www.googleapis.com/auth/drive.file')) {
 			const newScope = scope + ' https://www.googleapis.com/auth/drive.file';

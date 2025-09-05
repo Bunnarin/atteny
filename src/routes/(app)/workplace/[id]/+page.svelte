@@ -133,7 +133,7 @@
     </div>
 
     <div class="form-question">
-        <label class="question-title">Select Spreadsheet:</label>
+        <label class="question-title" for="file_id">Select Spreadsheet:</label>
         <button class="btn-secondary" type="button" on:click={() => showPicker = true}>Select File</button>
         {#if selectedFile}
             <p>Selected: {selectedFile.name}</p>
