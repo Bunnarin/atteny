@@ -3,13 +3,12 @@
     import { onMount } from 'svelte';
     export let data;
     const workplace = data.workplace;
-    // Create a deep copy of emails that's not reactive to workplace changes
     let emails = JSON.parse(JSON.stringify([
         ...(workplace?.expand?.employees?.map(e => e.email) || []),
         ...(data.invitations?.map(i => i.email) || [])
     ]));
     let currentEmail = '';
-    let selectedFile = workplace?.file_id ? { id: workplace.file_id, name: 'Selected file' } : null;
+    let selectedFile = workplace?.file_id ? { id: workplace.file_id, name: "selected" } : null;
     let showPicker = false;
     let pickerElement;
 
@@ -24,6 +23,7 @@
     let userLon = 0;
 
     // Rules for clock-in time windows
+    // copy it so that we can change it
     let rules = workplace?.rules ? JSON.parse(JSON.stringify(workplace.rules)) : [];
 
     onMount(async () => {
@@ -113,9 +113,8 @@
     }
 
     function addEmail(event) {
-        if (event.key !== 'Enter' || emails.length >= data.free_spot) {
+        if (event.key !== 'Enter' || emails.length >= data.free_spot)
             return;
-        }
         event.preventDefault();
         if (emails.includes(currentEmail.trim()))
             return;
@@ -126,44 +125,12 @@
             currentEmail = '';
         }
     }
-
-    function removeEmail(index) {
-        emails = emails.filter((_, i) => i !== index);
-    }
-
-    function confirmDelete(e) {
-        if (!confirm('Are you sure you want to delete this workplace? This action cannot be undone.')) {
-            e.preventDefault();
-        }
-    }
-
-    function handlePicked(event) {
-        selectedFile = event.detail.docs[0];
-        showPicker = false;
-    }
-
-    function handleCanceled(event) {
-        showPicker = false;
-    }
-
-    function centerOnUser() {
-        if (userLat && userLon) {
-            map.setView([userLat, userLon], 13);
-        }
-    }
-
-    function addRule() {
-        rules = [...rules, { start: '09:00', end: '17:00' }];
-    }
-
-    function removeRule(index) {
-        rules = rules.filter((_, i) => i !== index);
-    }
 </script>
+
 {#if data.id && data.id != "new"}
 <div class="form-actions">
-    <form action="?/delete" method="POST" on:submit={confirmDelete} style="display: inline;">
-        <button class="btn-secondary" type="submit">Delete</button>
+    <form action="?/delete" method="POST" on:submit={(e) => { if (!confirm('delete?')) e.preventDefault() }}>
+        <button class="btn-primary" type="submit">Delete</button>
     </form>
 </div>
 {/if}
@@ -187,8 +154,8 @@
         client-id="{PUBLIC_GOOGLE_CLIENT_ID}"
         app-id="{PUBLIC_GOOGLE_PROJECT_NUMBER}"
         login-hint="{data.user.email}"
-        on:picker:picked={handlePicked}
-        on:picker:canceled={handleCanceled}
+        on:picker:picked={(e) => [ selectedFile ] = e.detail.docs}
+        on:picker:canceled={() => showPicker = false}
         >
         <drive-picker-docs-view owned-by-me="true"
             mime-types="application/vnd.google-apps.spreadsheet">
@@ -202,29 +169,25 @@
     <input type="hidden" name="file_id" value={selectedFile?.id || ''} />
     <input type="hidden" name="rules" value={JSON.stringify(rules)} />
 
-    <div class="form-section">
-        <h2>Add employees</h2>
-        <p>Remaining spots: {Math.max(0, data.free_spot - emails.length)} of {data.free_spot}</p>
-        <div class="form-question">
-            <label class="question-title" for="email">Email:</label>
-            <input
-                class="question-input"
-                id="email"
-                type="email"
-                bind:value={currentEmail}
-                on:keydown={addEmail}
-                placeholder={emails.length >= data.free_spot ? 'No more spots available' : 'Enter email address and press Enter'}
-                readonly={emails.length >= data.free_spot}
-            />
-        </div>
-        <ul>
-            {#each emails as email, index}
-                <li class="employee-item">
-                    <span>{email}</span>
-                    <button class="btn-secondary" on:click={() => removeEmail(index)}>Remove</button>
-                </li>
-            {/each}
-        </ul>
+    <h2>Add employees</h2>
+    <p>Remaining spots: {Math.max(0, data.free_spot - emails.length)} of {data.free_spot}</p>
+    <div class="form-question">
+        <label class="question-title" for="email">Email:</label>
+        <input
+            class="question-input"
+            id="email"
+            type="email"
+            bind:value={currentEmail}
+            on:keydown={addEmail}
+            placeholder={emails.length >= data.free_spot ? 'No more spots available' : 'Enter email address and press Enter'}
+            readonly={emails.length >= data.free_spot}
+        />
+        {#each emails as email, index}
+        <span class="employee-item">
+            <button class="btn-primary" on:click={() => emails = emails.filter((_, i) => i !== index)}>x</button>
+            {email}
+        </span>
+    {/each}
     </div>
 
     <div class="form-question">
@@ -235,25 +198,23 @@
     <div class="form-section">
         <h2>Clock-in Time Rules</h2>
         <p>Define time windows when employees can clock in. Leave empty for 24/7 access.</p>
+        <!-- how to get key, value -->
         {#each rules as rule, index}
-            <div class="rule-item">
-                <label for="start">Start Time:</label>
-                <input type="time" bind:value={rule.start} />
-                <label for="end">End Time:</label>
-                <input type="time" bind:value={rule.end} />
-                <button class="btn-secondary" type="button" on:click={() => removeRule(index)}>Remove</button>
+            <div>
+                <input type="time" bind:value={rule.s} class="compact-time-input"/>
+                to  
+                <input type="time" bind:value={rule.e} class="compact-time-input"/>
+                <button class="btn-primary" type="button" on:click={() => rules = rules.filter((_, i) => i !== index) }>x</button>
             </div>
         {/each}
-        <button class="btn-secondary" type="button" on:click={addRule}>Add Time Window</button>
+        <button class="btn-secondary" type="button" on:click={() => rules = [...rules, {s: '01:00', e: '23:59'}]}>Add Time Window</button>
     </div>
 
     <div class="form-section">
         <h2>Select Location</h2>
         <div id="map" class="map-container" style="position: relative;">
-            <button type="button" class="center-button" on:click|stopPropagation={centerOnUser} title="Center on my location">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="currentColor"/>
-                </svg>
+            <button type="button" class="center-button" on:click|stopPropagation={() => map.setView([userLat, userLon], 13)}>
+                <img src="/center.png" alt="center"/>
             </button>
         </div>
     </div>

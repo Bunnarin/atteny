@@ -21,12 +21,10 @@
 
 <main class="form-container">
 	<div class="header">
-		<button class="btn-primary" on:click={() => goto('/')}>Home</button>
+		<a href="/"><img class="logo" src="/favicon.png" alt="Logo"/></a>
 		{#if data.user}
 			<div class="user">
-				<p>Employees: {data.user.current_employees}/{data.user.max_employees}</p>
-				<button class="btn-primary" on:click={() => goto('/payway')}>Buy More</button>
-				<h2>{data.user.full_name}</h2>
+				<button class="btn-primary" on:click={() => goto('/payway')}>Buy</button>
 				<button class="btn-secondary" on:click={() => goto('/logout')}>Logout</button>
 			</div>
 		{:else}

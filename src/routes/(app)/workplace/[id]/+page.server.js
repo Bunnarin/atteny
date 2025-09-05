@@ -1,7 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 
 export const load = async ({ params, locals }) => {
-    let free_spot;
     if (params.id != "new") {
         const workplace = await locals.pb.collection('workplace').getOne(params.id, {
             expand: 'employees'
@@ -10,7 +9,7 @@ export const load = async ({ params, locals }) => {
             filter: `workplace = "${params.id}"`
         });
         const this_total = invitations.length + (workplace?.expand?.employees?.length || 0);
-        free_spot = locals.user.max_employees - (locals.user.current_employees - this_total);
+        const free_spot = locals.user.max_employees - (locals.user.current_employees - this_total);
         return { 
             workplace, 
             id: params.id, 
@@ -18,7 +17,7 @@ export const load = async ({ params, locals }) => {
             free_spot 
         };
     } else {
-        free_spot = locals.user.max_employees - locals.user.current_employees;
+        const free_spot = locals.user.max_employees - locals.user.current_employees;
         return { 
             free_spot ,
             id: params.id

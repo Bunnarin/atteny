@@ -1,10 +1,32 @@
 <script>
     import { goto } from '$app/navigation';
+    import { onMount } from 'svelte';
     export let data;
 
     let locationError = '';
     let successMessage = '';
-    let copiedWorkplaceId = null; 
+    let copiedWorkplaceId = null;
+
+    // Clean up old localStorage entries (older than 30 days)
+    function cleanupOldClockIns() {
+        if (typeof window === 'undefined') return;
+        const keys = Object.keys(localStorage);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        keys.forEach(key => {
+            if (key.startsWith('clockin_')) {
+                const parts = key.split('_');
+                if (parts.length >= 3) {
+                    const dateStr = parts[2];
+                    const entryDate = new Date(dateStr);
+                    if (entryDate < thirtyDaysAgo) {
+                        localStorage.removeItem(key);
+                    }
+                }
+            }
+        });
+    }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371000; // Radius of the earth in m
@@ -23,36 +45,71 @@
         return deg * (Math.PI / 180);
     }
 
-    function isWithinTimeWindow(rules) {
+    function getClockInKey(workplaceId, date, windowIndex) {
+        return `clockin_${workplaceId}_${date}_${windowIndex}`;
+    }
+
+    function hasClockedInToday(workplaceId, windowIndex) {
+        if (typeof window === 'undefined') return false;
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const key = getClockInKey(workplaceId, today, windowIndex);
+        return localStorage.getItem(key) === 'true';
+    }
+
+    function recordClockIn(workplaceId, windowIndex) {
+        if (typeof window === 'undefined') return;
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const key = getClockInKey(workplaceId, today, windowIndex);
+        localStorage.setItem(key, 'true');
+    }
+
+    function isWithinTimeWindow(workplaceId, rules) {
         if (!rules || rules.length === 0) {
-            return true; // 24/7 access if no rules
+            return { allowed: true, windowIndex: -1 }; // 24/7 access if no rules
         }
 
         const now = new Date();
         const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
 
-        return rules.some(rule => {
-            const startTime = rule.start.split(':').map(Number);
-            const endTime = rule.end.split(':').map(Number);
+        rules.forEach((rule, index) => {
+            // get key val from rule
+            const [[key, value]] = Object.entries(rule);
+            const startTime = key.split(':').map(Number);
+            const endTime = value.split(':').map(Number);
             const startMinutes = startTime[0] * 60 + startTime[1];
             const endMinutes = endTime[0] * 60 + endTime[1];
 
+            let isInWindow = false;
             if (startMinutes <= endMinutes) {
                 // Same day window
-                return currentTime >= startMinutes && currentTime <= endMinutes;
+                isInWindow = currentTime >= startMinutes && currentTime <= endMinutes;
             } else {
                 // Overnight window (e.g., 22:00 to 06:00)
-                return currentTime >= startMinutes || currentTime <= endMinutes;
+                isInWindow = currentTime >= startMinutes || currentTime <= endMinutes;
+            }
+
+            if (isInWindow) {
+                // Check if already clocked in for this window today
+                if (hasClockedInToday(workplaceId, index))
+                    return { allowed: false, windowIndex: index, reason: 'already_clocked_in' };
+                return { allowed: true, windowIndex: index };
             }
         });
+
+        return { allowed: false, windowIndex: -1, reason: 'outside_window' };
     }
 
     let clockingIn = false;
 
     function clockIn(workplace) {
         // Check time restrictions first
-        if (!isWithinTimeWindow(workplace.rules)) {
-            alert('Clock-in is not allowed at this time. Please check your workplace time rules.');
+        const timeCheck = isWithinTimeWindow(workplace.id, workplace.rules);
+        if (!timeCheck.allowed) {
+            if (timeCheck.reason === 'already_clocked_in') {
+                alert('You have already clocked in for this time window today.');
+            } else {
+                alert('Clock-in is not allowed at this time. Please check your workplace time rules.');
+            }
             return;
         }
 
@@ -77,7 +134,13 @@
                         body: JSON.stringify({ file_id: workplace.file_id, name: workplace.name, employer: workplace.expand.employer, workplace_id: workplace.id }),
                     })
                     .then(response => response.json())
-                    .then(data => successMessage = `Successfully clocked in to ${workplace.name}! Distance: ${distance.toFixed(2)} m`)
+                    .then(data => {
+                        successMessage = `Successfully clocked in to ${workplace.name}! Distance: ${distance.toFixed(2)} m`;
+                        // Record the clock-in for this time window
+                        if (timeCheck.windowIndex >= 0) {
+                            recordClockIn(workplace.id, timeCheck.windowIndex);
+                        }
+                    })
                     .catch(error => locationError = 'Failed to clock in.');
                 }
             },
@@ -93,6 +156,11 @@
         // change the button to copied
         copiedWorkplaceId = workplace.id;
     }
+
+    // Clean up old localStorage entries on component mount
+    onMount(() => {
+        cleanupOldClockIns();
+    });
 </script>
 
 {#if data.user}
@@ -133,10 +201,9 @@
         <div class="form-section">
             <h2>{workplace.name}</h2>
             <button
-                class="btn-primary"
-                class:disabled={!isWithinTimeWindow(workplace.rules)}
+                class="btn-primary {!isWithinTimeWindow(workplace.id, workplace.rules).allowed ? 'btn-disabled' : ''}"
                 on:click={() => clockIn(workplace)}
-                disabled={!isWithinTimeWindow(workplace.rules)}
+                disabled={!isWithinTimeWindow(workplace.id, workplace.rules).allowed}
             >
                 {#if clockingIn && !locationError && !successMessage}
                     Clocking In...
