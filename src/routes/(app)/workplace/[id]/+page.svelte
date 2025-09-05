@@ -20,6 +20,8 @@
     let marker;
     let userLocationMarker;
     let L;
+    let userLat = 0;
+    let userLon = 0;
 
     onMount(async () => {
         await import('@googleworkspace/drive-picker-element');
@@ -56,12 +58,12 @@
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition(
                 (position) => {
-                    const userLat = position.coords.latitude;
-                    const userLon = position.coords.longitude;
-                    
+                    userLat = position.coords.latitude;
+                    userLon = position.coords.longitude;
+
                     // Update user location marker
                     userLocationMarker.setLatLng([userLat, userLon]);
-                    
+
                     // If this is a new workplace, center the map on user's location
                     if (data.id === "new" && !workplace?.location) {
                         lat = userLat;
@@ -140,6 +142,12 @@
     function handleCanceled(event) {
         showPicker = false;
     }
+
+    function centerOnUser() {
+        if (userLat && userLon) {
+            map.setView([userLat, userLon], 13);
+        }
+    }
 </script>
 {#if data.id && data.id != "new"}
 <div class="form-actions">
@@ -214,6 +222,7 @@
     <div class="form-section">
         <h2>Select Location</h2>
         <div id="map" class="map-container"></div>
+        <button class="btn-secondary" type="button" on:click={centerOnUser}>Center on Me</button>
     </div>
 
     <div class="form-actions">
