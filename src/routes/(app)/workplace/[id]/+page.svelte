@@ -18,37 +18,12 @@
     let lon = workplace?.location?.lon || 104.9282;
     let map;
     let marker;
+    let userLocationMarker;
     let L;
 
     onMount(async () => {
         await import('@googleworkspace/drive-picker-element');
-        // Try to get user's current location
-        if (data.id == "new") {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    lat = position.coords.latitude;
-                    lon = position.coords.longitude;
-                    // Update the map if it's already initialized
-                    if (map) {
-                        map.setView([lat, lon], 13);
-                        if (marker) {
-                            marker.setLatLng([lat, lon]);
-                        } else {
-                            marker = L.marker([lat, lon]).addTo(map);
-                        }
-                    }
-                },
-                (error) => {
-                    console.error("Error getting location:", error);
-                    // Fall back to workplace location if available
-                    if (workplace?.location?.lat && workplace?.location?.lon) {
-                        lat = workplace.location.lat;
-                        lon = workplace.location.lon;
-                    }
-                }
-            );
-        }
-
+        
         L = (await import('leaflet')).default;
 
         // Load CSS
@@ -62,6 +37,53 @@
             attribution: ' OpenStreetMap contributors'
         }).addTo(map);
 
+        // Create a blue dot icon for user location
+        const blueDot = L.divIcon({
+            className: 'user-location-dot',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+            popupAnchor: [0, -10],
+            html: '<div style="background-color: #4285F4; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>'
+        });
+
+        // Add user location marker
+        userLocationMarker = L.marker([0, 0], {
+            icon: blueDot,
+            interactive: false
+        }).addTo(map);
+
+        // Try to get user's current location
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLon = position.coords.longitude;
+                    
+                    // Update user location marker
+                    userLocationMarker.setLatLng([userLat, userLon]);
+                    
+                    // If this is a new workplace, center the map on user's location
+                    if (data.id === "new" && !workplace?.location) {
+                        lat = userLat;
+                        lon = userLon;
+                        map.setView([lat, lon], 13);
+                        if (marker) {
+                            marker.setLatLng([lat, lon]);
+                        }
+                    }
+                },
+                (error) => {
+                    console.error("Error getting location:", error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 30000,
+                    timeout: 27000
+                }
+            );
+        }
+
+        // Existing marker for workplace location
         marker = L.marker([lat, lon], {
             icon: L.icon({
                 iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
