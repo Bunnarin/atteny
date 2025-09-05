@@ -175,7 +175,7 @@
         bind:this={pickerElement}
         client-id="{PUBLIC_GOOGLE_CLIENT_ID}"
         app-id="{PUBLIC_GOOGLE_PROJECT_NUMBER}"
-        oauth-token="{data.user.google_access_token}"
+        login-hint="{data.user.email}"
         on:picker:picked={handlePicked}
         on:picker:canceled={handleCanceled}
         >

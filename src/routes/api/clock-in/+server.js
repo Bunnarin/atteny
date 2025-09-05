@@ -14,6 +14,9 @@ export const POST = async ({ request, locals }) => {
         const { file_id, name, employer } = await request.json();
         oauthClient.credentials.access_token = employer.google_access_token;
         oauthClient.credentials.refresh_token = employer.google_refresh_token;
+        // force expire to avoid the real expiration since I dont store it
+        oauthClient.credentials.expiry_date = Date.now();
+        
         const doc = new GoogleSpreadsheet(file_id, oauthClient);
         await doc.loadInfo();
         const timestamp = new Date().toLocaleString("sv", {timeZone: doc.timeZone});
