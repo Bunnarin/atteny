@@ -1,0 +1,15 @@
+import { redirect } from "@sveltejs/kit";
+// when the user gets here, they will be added to the workplace
+export const GET = async ({ locals, params }) => {
+    // if not authenitcalted, redirect to login, and then come back here
+    if (!locals.user) {
+        throw redirect(302, '/oauth?redirect=/subscribe/' + params.id);
+    }
+    locals.pb.collection('workplace').update(
+        params.id,
+        {
+            'employees+': locals.user.id
+        }
+    );
+    throw redirect(302, '/');
+}

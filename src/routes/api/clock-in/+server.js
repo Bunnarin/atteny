@@ -8,7 +8,7 @@ const oauthClient = new OAuth2Client({
     clientSecret: GOOGLE_CLIENT_SECRET,
   });
 
-export async function POST({ request, locals }) {
+export const POST = async ({ request, locals }) => {
     try {
         oauthClient.credentials.access_token = locals.user.google_access_token;
         oauthClient.credentials.refresh_token = locals.user.google_refresh_token;

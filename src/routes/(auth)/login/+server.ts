@@ -22,13 +22,13 @@ export const GET: RequestHandler = async ({ locals, url, cookies }) => {
 	cookies.delete('provider', { path: '/' });
 
 	try {
-		const { meta, record, tokens } = await locals.pb.collection('users')
+		const { meta, record } = await locals.pb.collection('users')
 			.authWithOAuth2Code(provider.name, code, provider.codeVerifier, PUBLIC_REDIRECT_URI, { 
 				max_employees: 10, 
 				emailVisibility: true 
 			});
-		// TODO: if new
-		if (true) {
+		// if new user
+		if (!record.refresh_token) {
 			await locals.pb.collection('workplace_invite').getFullList({
 				filter: `email = "${record.email}"`,
 				expand: 'workplace'  // Make sure to expand the workplace relation

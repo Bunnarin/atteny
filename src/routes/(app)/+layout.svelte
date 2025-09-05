@@ -19,7 +19,7 @@
 				</form>
 			</div>
 		{:else}
-			<a href="/oauth?provider=google" class="btn-primary">Login</a>
+			<a href="/oauth" class="btn-primary">Login</a>
 		{/if}
 	</div>
 	<slot />

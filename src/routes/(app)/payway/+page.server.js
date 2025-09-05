@@ -3,7 +3,6 @@ import { PAYWAY_KEY, RSA_PUBLIC_KEY } from '$env/static/private';
 import { createHmac } from 'crypto';
 import NodeRSA from 'node-rsa';
 
-
 export const actions = {
     default: async ({ url, request }) => {
         // get the formdata
