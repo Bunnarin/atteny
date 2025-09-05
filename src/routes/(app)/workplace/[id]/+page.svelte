@@ -23,6 +23,9 @@
     let userLat = 0;
     let userLon = 0;
 
+    // Rules for clock-in time windows
+    let rules = workplace?.rules ? JSON.parse(JSON.stringify(workplace.rules)) : [];
+
     onMount(async () => {
         await import('@googleworkspace/drive-picker-element');
         
@@ -148,6 +151,14 @@
             map.setView([userLat, userLon], 13);
         }
     }
+
+    function addRule() {
+        rules = [...rules, { start: '09:00', end: '17:00' }];
+    }
+
+    function removeRule(index) {
+        rules = rules.filter((_, i) => i !== index);
+    }
 </script>
 {#if data.id && data.id != "new"}
 <div class="form-actions">
@@ -180,7 +191,8 @@
         on:picker:canceled={handleCanceled}
         >
         <drive-picker-docs-view owned-by-me="true"
-            mime-types="application/vnd.google-apps.spreadsheet"></drive-picker-docs-view>
+            mime-types="application/vnd.google-apps.spreadsheet">
+        </drive-picker-docs-view>
     </drive-picker>
     {/if}
 
@@ -188,6 +200,7 @@
     <input type="hidden" name="lat" value={lat} />
     <input type="hidden" name="lon" value={lon} />
     <input type="hidden" name="file_id" value={selectedFile?.id || ''} />
+    <input type="hidden" name="rules" value={JSON.stringify(rules)} />
 
     <div class="form-section">
         <h2>Add employees</h2>
@@ -220,6 +233,21 @@
     </div>
 
     <div class="form-section">
+        <h2>Clock-in Time Rules</h2>
+        <p>Define time windows when employees can clock in. Leave empty for 24/7 access.</p>
+        {#each rules as rule, index}
+            <div class="rule-item">
+                <label for="start">Start Time:</label>
+                <input type="time" bind:value={rule.start} />
+                <label for="end">End Time:</label>
+                <input type="time" bind:value={rule.end} />
+                <button class="btn-secondary" type="button" on:click={() => removeRule(index)}>Remove</button>
+            </div>
+        {/each}
+        <button class="btn-secondary" type="button" on:click={addRule}>Add Time Window</button>
+    </div>
+
+    <div class="form-section">
         <h2>Select Location</h2>
         <div id="map" class="map-container" style="position: relative;">
             <button type="button" class="center-button" on:click|stopPropagation={centerOnUser} title="Center on my location">
@@ -234,27 +262,3 @@
         <button class="btn-primary" type="submit">Save Changes</button>
     </div>
 </form>
-
-<style>
-    .center-button {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 1000;
-        background: white;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 8px;
-        cursor: pointer;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .center-button:hover {
-        background: #f5f5f5;
-    }
-    .center-button svg {
-        color: #333;
-    }
-</style>

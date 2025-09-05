@@ -35,6 +35,7 @@ export const actions = {
         const lat = parseFloat(data.get('lat')?.toString() || '0');
         const lon = parseFloat(data.get('lon')?.toString() || '0');
         const file_id = data.get('file_id')?.toString() || null;
+        const rules = JSON.parse(data.get('rules')?.toString() || '[]');
 
         // Calculate free spots
         let free_spot;
@@ -82,7 +83,8 @@ export const actions = {
                     lat: lat,
                     lon: lon
                 },
-                file_id: file_id
+                file_id: file_id,
+                rules: rules
             };
             const record = (params.id != 'new') ?
                 await locals.pb.collection('workplace').update(params.id, workplace) :

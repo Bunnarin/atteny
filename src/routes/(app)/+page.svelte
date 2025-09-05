@@ -53,7 +53,7 @@
             },
             (error) => {
                 console.error('Geolocation error:', error);
-                locationError = 'Unable to retrieve your location.';
+                locationError = error.message;
             }
         );
     }

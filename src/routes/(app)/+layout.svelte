@@ -30,7 +30,7 @@
 				<button class="btn-secondary" on:click={() => goto('/logout')}>Logout</button>
 			</div>
 		{:else}
-			<a href="/login" class="btn-primary">Login</a>
+		<button class="btn-primary" on:click={() => goto('/login')}>Login</button>
 		{/if}
 	</div>
 	<slot />
