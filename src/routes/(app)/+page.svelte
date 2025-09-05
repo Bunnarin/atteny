@@ -33,7 +33,6 @@
                 const workLat = workplace.location.lat;
                 const workLng = workplace.location.lon;
                 const distance = calculateDistance(userLat, userLng, workLat, workLng);
-
                 
                 if (distance > workplace.proximity) {
                     locationError = `You are ${distance.toFixed(2)} m away from ${workplace.name}. You must be within ${workplace.proximity} m to clock in.`;
@@ -41,7 +40,7 @@
                     fetch('/api/clock-in', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ file_id: workplace.file_id }),
+                        body: JSON.stringify({ file_id: workplace.file_id, name: workplace.name, employer: workplace.expand.employer }),
                     })
                     .then(response => response.json())
                     .then(data => successMessage = `Successfully clocked in to ${workplace.name}! Distance: ${distance.toFixed(2)} m`)

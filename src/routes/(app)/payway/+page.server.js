@@ -12,8 +12,6 @@ export const actions = {
         myHeaders.append("Content-Type", "multipart/form-data");
 
         // Define all form fields in a single object
-        console.log(new Date().toLocaleString('sv').replace(/[\s:-]/g, ''));
-        console.log(new Date().toISOString().replace(/[\s:T.-]/g, '').slice(0, 14));
         const formFields = {
             request_time: new Date().toISOString().replace(/[\s:T.-]/g, '').slice(0, 14),
             merchant_id: PUBLIC_MERCHANT_ID,
@@ -65,13 +63,9 @@ export const actions = {
             redirect: 'follow'
         };
 
-        try {
-            fetch(PUBLIC_PAYWAY_ENDPOINT, requestOptions)
-                .then(response => response.text())
-                .then(result => console.log(result));
-        } catch (error) {
-            console.error('Error:', error);
-            return { error: error.message };
-        }
+        fetch(PUBLIC_PAYWAY_ENDPOINT, requestOptions)
+            .then(response => response.text())
+            .then(result => console.log(result))
+            .catch(err => console.error(err));
     }
 }

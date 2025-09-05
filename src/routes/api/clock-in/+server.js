@@ -10,14 +10,17 @@ const oauthClient = new OAuth2Client({
 
 export const POST = async ({ request, locals }) => {
     try {
-        oauthClient.credentials.access_token = locals.user.google_access_token;
-        oauthClient.credentials.refresh_token = locals.user.google_refresh_token;
-        const { file_id } = await request.json();
+        // get the timezone
+        const { file_id, name, employer } = await request.json();
+        oauthClient.credentials.access_token = employer.google_access_token;
+        oauthClient.credentials.refresh_token = employer.google_refresh_token;
         const doc = new GoogleSpreadsheet(file_id, oauthClient);
         await doc.loadInfo();
-        const sheet = doc.sheetsByIndex[0];
-        await sheet.setHeaderRow(['Date', 'Time', 'Name'])
-        .then(() => sheet.addRow([new Date(), new Date().toLocaleTimeString(), locals.user.full_name]));
+        const timestamp = new Date().toLocaleString("sv", {timeZone: doc.timeZone});
+        const log = [timestamp.slice(0, 10), timestamp.slice(11, 16), locals.user.full_name];
+        let sheet = doc.sheetsByTitle[name + ' log'];
+        if (!sheet) sheet = await doc.addSheet({ title: `${name} log`, headerValues: ['Date', 'Time', 'Name'] });
+        sheet.addRow(log);
         return new Response(JSON.stringify({ message: 'Clock-in successful' }));
     } catch (error) {
         console.error('Clock-in logging error:', error);
