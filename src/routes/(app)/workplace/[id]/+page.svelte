@@ -3,16 +3,14 @@
     import { onMount } from 'svelte';
     export let data;
     const workplace = data.workplace;
-    // deepcopy so that we can change it
-    let emails = JSON.parse(JSON.stringify(data.emails));
+    let emails = JSON.parse(JSON.stringify(workplace?.expand?.employees?.map(e => e.email) || []));
     let currentEmail = '';
     let selectedFile = workplace?.file_id ? { id: workplace.file_id, name: "selected" } : null;
     let showPicker = false;
-    let pickerElement;
 
     // Default to Phnom Penh coordinates    
-    let lat = workplace?.location?.lat || 11.5564;
-    let lon = workplace?.location?.lon || 104.9282;
+    let lat = workplace?.location?.lat || 0;
+    let lon = workplace?.location?.lon || 0;
     let map;
     let marker;
     let userLocationMarker;
@@ -66,7 +64,7 @@
                     userLocationMarker.setLatLng([userLat, userLon]);
 
                     // If this is a new workplace, center the map on user's location
-                    if (!data.workplace && !workplace?.location) {
+                    if (!workplace) {
                         lat = userLat;
                         lon = userLon;
                         map.setView([lat, lon], 13);
@@ -132,7 +130,7 @@
     }
 </script>
 
-{#if data.workplace}
+{#if data.id && data.id != "new"}
 <div class="form-actions">
     <form action="?/delete" method="POST" on:submit={(e) => { if (!confirm('delete?')) e.preventDefault() }}>
         <button class="btn-primary" type="submit">Delete</button>
@@ -147,14 +145,13 @@
 
     <div class="form-question">
         <label class="question-title" for="file_id">Link Spreadsheet:</label>
-        <button class="btn-secondary" on:click={() => showPicker = true}>
+        <button class="btn-secondary" on:click={(e) => { e.preventDefault(); showPicker = true; }}>
             {#if selectedFile} Selected {:else} Select {/if}
         </button>
     </div>
 
     {#if showPicker}
     <drive-picker
-        bind:this={pickerElement}
         client-id="{PUBLIC_GOOGLE_CLIENT_ID}"
         app-id="{PUBLIC_GOOGLE_PROJECT_NUMBER}"
         login-hint="{data.user.email}"

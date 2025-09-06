@@ -7,12 +7,12 @@
     let successMessage = '';
     let copiedWorkplaceId = null;
 
-    // Clean up old localStorage entries (older than 30 days)
+    // Clean up ytd's clock-ins
     function cleanupOldClockIns() {
         if (typeof window === 'undefined') return;
         const keys = Object.keys(localStorage);
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
 
         keys.forEach(key => {
             if (key.startsWith('clockin_')) {
@@ -20,7 +20,7 @@
                 if (parts.length >= 3) {
                     const dateStr = parts[2];
                     const entryDate = new Date(dateStr);
-                    if (entryDate < thirtyDaysAgo) {
+                    if (entryDate < yesterday) {
                         localStorage.removeItem(key);
                     }
                 }
@@ -45,21 +45,17 @@
         return deg * (Math.PI / 180);
     }
 
-    function getClockInKey(workplaceId, date, windowIndex) {
-        return `clockin_${workplaceId}_${date}_${windowIndex}`;
-    }
-
     function hasClockedInToday(workplaceId, windowIndex) {
         if (typeof window === 'undefined') return false;
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-        const key = getClockInKey(workplaceId, today, windowIndex);
+        const key = `clockin_${workplaceId}_${today}_${windowIndex}`;
         return localStorage.getItem(key) === 'true';
     }
 
     function recordClockIn(workplaceId, windowIndex) {
         if (typeof window === 'undefined') return;
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-        const key = getClockInKey(workplaceId, today, windowIndex);
+        const key = `clockin_${workplaceId}_${today}_${windowIndex}`;
         localStorage.setItem(key, 'true');
     }
 

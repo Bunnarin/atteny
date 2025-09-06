@@ -50,7 +50,8 @@ export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddre
 						'employees+': record.id
 					});
 					locals.pb.collection('workplace_invite').delete(invite.id);
-				}));
+				}))
+				.catch(() => {});
 			}
 			locals.pb.collection('users').update(record.id, {
 				google_access_token: meta.accessToken,
@@ -59,6 +60,7 @@ export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddre
 			})
 		} catch (error) {
 			const msg = "another account detected on this device. this is to prevent cheating";
+			console.error(error);
 			throw redirect(302, '/?error=auth_failed&message=' + encodeURIComponent(msg));
 		}
 		throw redirect(302, redirectTo || '/');
