@@ -4,7 +4,8 @@ import { fail, redirect } from '@sveltejs/kit';
 
 export const actions = {
     upsert: async ({ request, params, locals }) => {
-        const { free_spot } = await calculate_free_spot(params, locals);
+        const { free_spot, workplace } = await calculate_free_spot(params, locals);
+        const initial_emails = workplace?.expand?.employees?.map(e => e.email) || [];
 
         const data = await request.formData();
         const name = data.get('name')?.toString();
@@ -14,6 +15,13 @@ export const actions = {
         const file_id = data.get('file_id')?.toString();
         const emails = JSON.parse(data.get('emails')?.toString() || '[]');
         const rules = JSON.parse(data.get('rules')?.toString() || '[]');
+
+        // for each of initial_emails that wasn't found in emails, check if the user is unverified
+        await Promise.all(initial_emails.map(async (email) => {
+            if (emails.includes(email)) return;
+            await locals.pb.collection('users').getFirstListItem(`email = "${email}"`)
+            .then(user => { if (!user.verified) locals.pb.collection('users').delete(user.id) });
+        }));
 
         // get employees from email
         const employees = [];
@@ -34,7 +42,7 @@ export const actions = {
             });
         }));
 
-        const workplace = {
+        const workplace_fixture = {
             name: name,
             proximity: proximity,
             employer: locals.user.id,
@@ -44,8 +52,8 @@ export const actions = {
             rules: rules
         };
         
-        if (params.id == 'new') await locals.pb.collection('workplace').create(workplace);
-        else await locals.pb.collection('workplace').update(params.id, workplace);
+        if (params.id == 'new') await locals.pb.collection('workplace').create(workplace_fixture);
+        else await locals.pb.collection('workplace').update(params.id, workplace_fixture);
 
         // update the user's current_employees
         await locals.pb.collection('users').update(locals.user.id, {
