@@ -7,12 +7,12 @@
     let successMessage = '';
     let copiedWorkplaceId = null;
 
-    // Clean up ytd's clock-ins
+    // Clean up old localStorage entries (older than 30 days)
     function cleanupOldClockIns() {
         if (typeof window === 'undefined') return;
         const keys = Object.keys(localStorage);
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         keys.forEach(key => {
             if (key.startsWith('clockin_')) {
@@ -20,7 +20,7 @@
                 if (parts.length >= 3) {
                     const dateStr = parts[2];
                     const entryDate = new Date(dateStr);
-                    if (entryDate < yesterday) {
+                    if (entryDate < thirtyDaysAgo) {
                         localStorage.removeItem(key);
                     }
                 }
@@ -45,6 +45,8 @@
         return deg * (Math.PI / 180);
     }
 
+
+
     function hasClockedInToday(workplaceId, windowIndex) {
         if (typeof window === 'undefined') return false;
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -67,11 +69,11 @@
         const now = new Date();
         const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
 
-        rules.forEach((rule, index) => {
+        for (let i = 0; i < rules.length; i++) {
+            const rule = rules[i];
             // get key val from rule
-            const [[key, value]] = Object.entries(rule);
-            const startTime = key.split(':').map(Number);
-            const endTime = value.split(':').map(Number);
+            const startTime = rule.s.split(':').map(Number);
+            const endTime = rule.e.split(':').map(Number);
             const startMinutes = startTime[0] * 60 + startTime[1];
             const endMinutes = endTime[0] * 60 + endTime[1];
 
@@ -86,11 +88,11 @@
 
             if (isInWindow) {
                 // Check if already clocked in for this window today
-                if (hasClockedInToday(workplaceId, index))
-                    return { allowed: false, windowIndex: index, reason: 'already_clocked_in' };
-                return { allowed: true, windowIndex: index };
+                if (hasClockedInToday(workplaceId, i))
+                    return { allowed: false, windowIndex: i, reason: 'already_clocked_in' };
+                return { allowed: true, windowIndex: i };
             }
-        });
+        }
 
         return { allowed: false, windowIndex: -1, reason: 'outside_window' };
     }
@@ -127,7 +129,7 @@
                     fetch('/api/clock-in', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ file_id: workplace.file_id, name: workplace.name, employer: workplace.expand.employer, workplace_id: workplace.id }),
+                        body: JSON.stringify({ workplace }),
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -137,7 +139,7 @@
                             recordClockIn(workplace.id, timeCheck.windowIndex);
                         }
                     })
-                    .catch(error => locationError = 'Failed to clock in.');
+                    .catch(error => locationError = error);
                 }
             },
             (error) => {
@@ -197,7 +199,7 @@
         <div class="form-section">
             <h2>{workplace.name}</h2>
             <button
-                class="btn-primary {!isWithinTimeWindow(workplace.id, workplace.rules).allowed ? 'btn-disabled' : ''}"
+                class="btn-primary"
                 on:click={() => clockIn(workplace)}
                 disabled={!isWithinTimeWindow(workplace.id, workplace.rules).allowed}
             >
