@@ -3,10 +3,8 @@
     import { onMount } from 'svelte';
     export let data;
     const workplace = data.workplace;
-    let emails = JSON.parse(JSON.stringify([
-        ...(workplace?.expand?.employees?.map(e => e.email) || []),
-        ...(data.invitations?.map(i => i.email) || [])
-    ]));
+    // deepcopy so that we can change it
+    let emails = JSON.parse(JSON.stringify(data.emails));
     let currentEmail = '';
     let selectedFile = workplace?.file_id ? { id: workplace.file_id, name: "selected" } : null;
     let showPicker = false;
@@ -68,7 +66,7 @@
                     userLocationMarker.setLatLng([userLat, userLon]);
 
                     // If this is a new workplace, center the map on user's location
-                    if (data.id === "new" && !workplace?.location) {
+                    if (!data.workplace && !workplace?.location) {
                         lat = userLat;
                         lon = userLon;
                         map.setView([lat, lon], 13);
@@ -134,7 +132,7 @@
     }
 </script>
 
-{#if data.id && data.id != "new"}
+{#if data.workplace}
 <div class="form-actions">
     <form action="?/delete" method="POST" on:submit={(e) => { if (!confirm('delete?')) e.preventDefault() }}>
         <button class="btn-primary" type="submit">Delete</button>
