@@ -21,13 +21,7 @@ export const actions = {
         const initial_emails = workplace?.expand?.employees?.map(e => e.email) || [];
 
         const data = await request.formData();
-        const name = data.get('name')?.toString();
-        const proximity = data.get('proximity')?.toString();
-        const lat = parseFloat(data.get('lat')?.toString() || '0');
-        const lon = parseFloat(data.get('lon')?.toString() || '0');
-        const file_id = data.get('file_id')?.toString();
         const emails = JSON.parse(data.get('emails')?.toString() || '[]');
-        const rules = JSON.parse(data.get('rules')?.toString() || '[]');
 
         // for each of initial_emails that wasn't found in emails, check if the user is unverified
         await Promise.all(initial_emails.map(async (email) => {
@@ -56,13 +50,16 @@ export const actions = {
         }));
 
         const workplace_fixture = {
-            name: name,
-            proximity: proximity,
+            name: data.get('name')?.toString(),
+            proximity: data.get('proximity')?.toString(),
             employer: locals.user.id,
             employees: employees,
-            location: {lat: lat, lon: lon},
-            file_id: file_id,
-            rules: rules
+            location: {
+                lat: parseFloat(data.get('lat')?.toString() || '0'),
+                lon: parseFloat(data.get('lon')?.toString() || '0')
+            },
+            file_id: data.get('file_id')?.toString(),
+            rules: JSON.parse(data.get('rules')?.toString() || '[]')
         };
         
         if (params.id == 'new') await locals.pb.collection('workplace').create(workplace_fixture);

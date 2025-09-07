@@ -23,18 +23,11 @@ export const POST = async ({ request, locals }) => {
                 const startMinutes = startTime[0] * 60 + startTime[1];
                 const endMinutes = endTime[0] * 60 + endTime[1];
 
-                if (startMinutes <= endMinutes) {
-                    // Same day window
-                    return currentTime >= startMinutes && currentTime <= endMinutes;
-                } else {
-                    // Overnight window
-                    return currentTime >= startMinutes || currentTime <= endMinutes;
-                }
+                if (startMinutes <= endMinutes) return currentTime >= startMinutes && currentTime <= endMinutes;
+                else return currentTime >= startMinutes || currentTime <= endMinutes;
             });
 
-            if (!isWithinTimeWindow) {
-                return new Response(JSON.stringify({ error: 'Clock-in is not allowed at this time. Please check your workplace time rules.' }), { status: 403 });
-            }
+            if (!isWithinTimeWindow) return new Response(JSON.stringify({ error: 'Clock-in is not allowed at this time. Please check your workplace time rules.' }), { status: 403 });
         }
 
         // get the employer's credential

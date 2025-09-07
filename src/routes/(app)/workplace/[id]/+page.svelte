@@ -112,9 +112,7 @@
         if (event.key !== 'Enter' || emails.length >= data.free_spot)
             return;
         event.preventDefault();
-        if (emails.includes(currentEmail.trim()))
-            return;
-        if (!currentEmail.includes('@'))
+        if (emails.includes(currentEmail.trim()) || !currentEmail.includes('@'))
             return;
         if (currentEmail.trim()) {
             emails = [...emails, currentEmail.trim()];
@@ -123,6 +121,7 @@
     }
 
     function handleSubmit(event) {
+        // to ensure that a file is selected
         if (!selectedFile) {
             event.preventDefault();
             alert('Please select a spreadsheet file before submitting.');

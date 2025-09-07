@@ -1,11 +1,19 @@
 <script>
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
+    import { enhance } from '$app/forms';
     export let data;
 
     let locationError = '';
     let successMessage = '';
-    let copiedWorkplaceId = null;
+    let selectedWorkplaceId = null;
+    let clockingIn = false;
+
+    let showLeaveModal = false;
+    let date = '';
+    let reason = '';
+    let formError = '';
+    let formSuccess = '';
 
     // Clean up old localStorage entries (older than 30 days)
     function cleanupOldClockIns() {
@@ -44,8 +52,6 @@
     function deg2rad(deg) {
         return deg * (Math.PI / 180);
     }
-
-
 
     function hasClockedInToday(workplaceId, windowIndex) {
         if (typeof window === 'undefined') return false;
@@ -96,8 +102,6 @@
 
         return { allowed: false, windowIndex: -1, reason: 'outside_window' };
     }
-
-    let clockingIn = false;
 
     function clockIn(workplace) {
         // Check time restrictions first
@@ -152,7 +156,7 @@
     function copy_link(workplace) {
         navigator.clipboard.writeText(`${window.location.origin}/subscribe/${workplace.id}`);
         // change the button to copied
-        copiedWorkplaceId = workplace.id;
+        selectedWorkplaceId = workplace.id;
     }
 
     // Clean up old localStorage entries on component mount
@@ -165,24 +169,22 @@
 <div class="form-actions">
     <button class="btn-primary" on:click={() => goto('/workplace/new')}>Add Workplace</button>
 </div>
+{/if}
 
-<div>
-    {#if data.workplaces_as_employer.length > 0}
-    <h1 class="form-title">Workplaces (as employer)</h1>
-    {#each data.workplaces_as_employer as workplace}
-        <div class="form-section">
-            <h2>{workplace.name}</h2>
-            <button class="btn-primary" on:click={() => goto(`/workplace/${workplace.id}`)}>Edit</button>
-            <button class="btn-primary" on:click={() => copy_link(workplace)}>
-                {copiedWorkplaceId === workplace.id ? 'Copied!' : 'Invite Link'}
-            </button>
-        </div>
-    {/each}
-    {/if}
-</div>
+{#if data.workplaces_as_employer.length > 0}
+<h1 class="form-title">Workplaces (as employer)</h1>
+{#each data.workplaces_as_employer as workplace}
+    <div class="form-section">
+        <h2>{workplace.name}</h2>
+        <button class="btn-primary" on:click={() => goto(`/workplace/${workplace.id}`)}>Edit</button>
+        <button class="btn-primary" on:click={() => copy_link(workplace)}>
+            {selectedWorkplaceId === workplace.id ? 'Copied!' : 'Invite Link'}
+        </button>
+    </div>
+{/each}
+{/if}
 
-<div>
-    {#if data.workplaces_as_employee.length > 0}
+{#if data.workplaces_as_employee.length > 0}
     <h1 class="form-title">Workplaces (as employee)</h1>
     {#if locationError}
         <div class="error">{locationError}</div>
@@ -209,8 +211,30 @@
                     Clock In
                 {/if}
             </button>
+            <button class="btn-primary" on:click={() => {showLeaveModal = true; selectedWorkplaceId = workplace.id;}}>Request Leave</button>
         </div>
     {/each}
-    {/if}
+{/if}
+
+{#if showLeaveModal}
+<div class="modal-overlay" on:click|self={() => showLeaveModal = false}>
+    <div class="modal-content">
+        <h3>Request Leave</h3>
+        
+        {#if formError}
+            <div class="error-message">{formError}</div>
+        {/if}
+        
+        {#if formSuccess}
+            <div class="success-message">{formSuccess}</div>
+        {/if}
+
+        <form action="?/request_leave" method="POST">
+            <input type="hidden" name="workplace_id" value={selectedWorkplaceId} />
+            Date: <input type="date" id="date" name="date" bind:value={date} required min={new Date().toISOString().split('T')[0]} />
+            Reason: <textarea id="reason" name="reason" bind:value={reason} required maxlength="255"></textarea>
+            <button type="submit">Submit Request</button>
+        </form>
+    </div>
 </div>
 {/if}
