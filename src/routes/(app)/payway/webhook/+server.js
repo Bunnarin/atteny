@@ -5,7 +5,7 @@ export const POST = async ({ request, locals }) => {
     if (data.status != '00') 
         throw redirect(304, '/');
     // update the user's max_employees
-    await locals.pb.collection('users').update(locals.user.id, {
+    locals.user = await locals.pb.collection('users').update(locals.user.id, {
         max_employees: locals.user.max_employees + data.amount
     });
     throw redirect(303, '/');

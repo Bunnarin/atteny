@@ -5,15 +5,19 @@ export const load = async ({ params, locals }) => calculate_free_spot(params, lo
 export const actions = {
     delete: async ({ params, locals }) => {
         // for each employees that is unverified, delete them
-        await locals.pb.collection('workplace').getOne(params.id, {expand: 'employees'})
+        const workplace = await locals.pb.collection('workplace').getOne(params.id, {expand: 'employees'})
             .then(workplace => workplace.expand?.employees?.forEach((user) => {
                 if (!user.verified) locals.pb.collection('users').delete(user.id);
             }));
         locals.pb.collection('workplace').delete(params.id);
+        // deduct the current_employees from the user
+        locals.user = await locals.pb.collection('users').update(locals.user.id, {
+            current_employees: locals.user.current_employees - workplace.expand?.employees?.length
+        });
         throw redirect(303, '/');
     },
     upsert: async ({ request, params, locals }) => {
-        const { free_spot, workplace } = await calculate_free_spot(params, locals);
+        const { workplace, current_employee_without_this_workplace } = await calculate_free_spot(params, locals);
         const initial_emails = workplace?.expand?.employees?.map(e => e.email) || [];
 
         const data = await request.formData();
@@ -66,7 +70,7 @@ export const actions = {
 
         // update the user's current_employees
         locals.user = await locals.pb.collection('users').update(locals.user.id, {
-            current_employees: locals.user.max_employees - free_spot + emails.length
+            current_employees: current_employee_without_this_workplace + emails.length
         });
         throw redirect(303, '/');
     }
@@ -74,12 +78,17 @@ export const actions = {
 
 async function calculate_free_spot(params, locals) {
     if (params.id == "new") {
-        return { free_spot: locals.user.max_employees - locals.user.current_employees };
+        return { free_spot: locals.user.max_employees - locals.user.current_employees, 
+            current_employee_without_this_workplace: locals.user.current_employees };
     } else {
         const workplace = await locals.pb.collection('workplace').getOne(params.id, {
             expand: 'employees'
         });
-        const this_total = (workplace?.expand?.employees?.length || 0);
-        return { workplace, free_spot: locals.user.max_employees - (locals.user.current_employees - this_total) };
+        const initial_total = (workplace?.expand?.employees?.length || 0);
+        const current_employee_without_this_workplace = locals.user.current_employees - initial_total;
+        return { workplace, 
+            free_spot: locals.user.max_employees - current_employee_without_this_workplace, 
+            current_employee_without_this_workplace 
+        };
     }
 }
