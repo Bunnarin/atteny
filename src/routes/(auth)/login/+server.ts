@@ -40,20 +40,19 @@ export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddre
 			);
 			// if signing in from pre-auth (created by employer), update the name and refresh_token
 			if (!record.google_refresh_token)
-				locals.pb.collection('users').update(record.id, {
-					google_access_token: meta.accessToken,
-					google_refresh_token: meta.refreshToken,
+				await locals.pb.collection('users').update(record.id, {
 					ip_address: ip,
+					google_refresh_token: meta.refreshToken,
 					full_name: meta.name,
 				});
 			else
-				locals.pb.collection('users').update(record.id, {
-					google_access_token: meta.accessToken,
+				await locals.pb.collection('users').update(record.id, {
 					ip_address: ip,
 				});
 		} catch (error) {
+			// log the user out
+			await locals.pb.authStore.clear();
 			const msg = "another account detected on this device. You cannot sign in. If you wish to use this device, you must sign the other account on another device. this is to prevent cheating";
-			console.error(error);
 			throw redirect(302, '/?error=auth_failed&message=' + encodeURIComponent(msg));
 		}
 		throw redirect(302, redirectTo || '/');

@@ -32,10 +32,7 @@ export const POST = async ({ request, locals }) => {
 
         // get the employer's credential
         const employer = await locals.pb.collection('users').getOne(workplace.employer);
-        oauthClient.credentials.access_token = employer.google_access_token;
         oauthClient.credentials.refresh_token = employer.google_refresh_token;
-        // force expire to avoid the real expiration since I dont store it
-        oauthClient.credentials.expiry_date = Date.now();
         
         const doc = new GoogleSpreadsheet(workplace.file_id, oauthClient);
         await doc.loadInfo();

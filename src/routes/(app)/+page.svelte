@@ -1,7 +1,8 @@
 <script>
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
-    import { enhance } from '$app/forms';
+    import { page } from '$app/stores';
+    
     export let data;
 
     let locationError = '';
@@ -14,6 +15,9 @@
     let reason = '';
     let formError = '';
     let formSuccess = '';
+
+    // Add error message state
+    $: errorMessage = $page.url.searchParams.get('message');
 
     // Clean up old localStorage entries (older than 30 days)
     function cleanupOldClockIns() {
@@ -165,6 +169,12 @@
     });
 </script>
 
+{#if errorMessage}
+    <div class="error-message">
+        {decodeURIComponent(errorMessage)}
+    </div>
+{/if}
+
 {#if data.user}
 <div class="form-actions">
     <button class="btn-primary" on:click={() => goto('/workplace/new')}>Add Workplace</button>
@@ -180,6 +190,7 @@
         <button class="btn-primary" on:click={() => copy_link(workplace)}>
             {selectedWorkplaceId === workplace.id ? 'Copied!' : 'Invite Link'}
         </button>
+        <button class="btn-primary" on:click={() => goto(`/request/${workplace.id}`)}>pending requests</button>
     </div>
 {/each}
 {/if}

@@ -1,4 +1,5 @@
 export const load = async ({ locals }) => {
+    if (!locals.user) return { workplaces_as_employer: [], workplaces_as_employee: [] };
     const workplaces = await locals.pb.collection('workplace').getFullList();
     return { 
         workplaces_as_employer: workplaces.filter((workplace) => workplace.employer === locals.user.id),

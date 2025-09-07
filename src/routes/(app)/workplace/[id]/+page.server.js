@@ -9,11 +9,11 @@ export const actions = {
             .then(workplace => workplace.expand?.employees?.forEach((user) => {
                 if (!user.verified) locals.pb.collection('users').delete(user.id);
             }));
-        locals.pb.collection('workplace').delete(params.id);
         // deduct the current_employees from the user
         locals.user = await locals.pb.collection('users').update(locals.user.id, {
-            current_employees: locals.user.current_employees - workplace.expand?.employees?.length
+            current_employees: locals.user.current_employees - workplace.employees?.length
         });
+        locals.pb.collection('workplace').delete(params.id);
         throw redirect(303, '/');
     },
     upsert: async ({ request, params, locals }) => {
