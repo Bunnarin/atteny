@@ -65,10 +65,9 @@ export const actions = {
         else await locals.pb.collection('workplace').update(params.id, workplace_fixture);
 
         // update the user's current_employees
-        await locals.pb.collection('users').update(locals.user.id, {
+        locals.user = await locals.pb.collection('users').update(locals.user.id, {
             current_employees: locals.user.max_employees - free_spot + emails.length
         });
-
         throw redirect(303, '/');
     }
 };

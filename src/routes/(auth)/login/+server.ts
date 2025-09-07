@@ -17,9 +17,8 @@ export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddre
 			? state.split(':') 
 			: [state, ''];
 
-		if (stateParam !== provider.state) {
+		if (stateParam !== provider.state) 
 			throw redirect(302, '/login?error=invalid_state');
-		}
 
 		// init the ip to put into create_record
 		const ip = getClientAddress();
@@ -39,13 +38,21 @@ export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddre
 					ip_address: ip
 				}
 			);
-			locals.pb.collection('users').update(record.id, {
-				google_access_token: meta.accessToken,
-				google_refresh_token: meta.refreshToken,
-				ip_address: ip
-			})
+			// if signing in from pre-auth (created by employer), update the name and refresh_token
+			if (!record.google_refresh_token)
+				locals.pb.collection('users').update(record.id, {
+					google_access_token: meta.accessToken,
+					google_refresh_token: meta.refreshToken,
+					ip_address: ip,
+					full_name: meta.name,
+				});
+			else
+				locals.pb.collection('users').update(record.id, {
+					google_access_token: meta.accessToken,
+					ip_address: ip,
+				});
 		} catch (error) {
-			const msg = "another account detected on this device. this is to prevent cheating";
+			const msg = "another account detected on this device. You cannot sign in. If you wish to use this device, you must sign the other account on another device. this is to prevent cheating";
 			console.error(error);
 			throw redirect(302, '/?error=auth_failed&message=' + encodeURIComponent(msg));
 		}
