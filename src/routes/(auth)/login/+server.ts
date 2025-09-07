@@ -39,20 +39,6 @@ export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddre
 					ip_address: ip
 				}
 			);
-			// if new user
-			if (!record.refresh_token) {
-				await locals.pb.collection('workplace_invite').getFullList({
-					filter: `email = "${record.email}"`,
-					expand: 'workplace'  // Make sure to expand the workplace relation
-				})
-				.then(async (invites) => invites.forEach(async (invite) => {
-					await locals.pb.collection('workplace').update(invite.workplace, {
-						'employees+': record.id
-					});
-					locals.pb.collection('workplace_invite').delete(invite.id);
-				}))
-				.catch(() => {});
-			}
 			locals.pb.collection('users').update(record.id, {
 				google_access_token: meta.accessToken,
 				google_refresh_token: meta.refreshToken,

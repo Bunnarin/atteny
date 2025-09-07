@@ -1,8 +1,17 @@
+import { redirect } from '@sveltejs/kit';
+
 export const load = async ({ params, locals }) => calculate_free_spot(params, locals);
 
-import { fail, redirect } from '@sveltejs/kit';
-
 export const actions = {
+    delete: async ({ params, locals }) => {
+        // for each employees that is unverified, delete them
+        await locals.pb.collection('workplace').getOne(params.id, {expand: 'employees'})
+            .then(workplace => workplace.expand?.employees?.forEach((user) => {
+                if (!user.verified) locals.pb.collection('users').delete(user.id);
+            }));
+        locals.pb.collection('workplace').delete(params.id);
+        throw redirect(303, '/');
+    },
     upsert: async ({ request, params, locals }) => {
         const { free_spot, workplace } = await calculate_free_spot(params, locals);
         const initial_emails = workplace?.expand?.employees?.map(e => e.email) || [];
@@ -28,17 +37,17 @@ export const actions = {
         await Promise.all(emails.map(async (email) => {
             await locals.pb.collection('users').getFirstListItem(`email = "${email}"`)
             .then(user => employees.push(user.id))
-            .catch(() => { // create the user
+            .catch(async () => { // create the user
                 const password = (Math.random() + 1).toString(36).substring(7);
-                const newUser = locals.pb.collection('users').create({
+                await locals.pb.collection('users').create({
                     email: email,
                     emailVisibility: true,
                     password: password,
                     passwordConfirm: password,
                     max_employees: 10,
                     ip_address: (Math.random() + 1).toString(36).substring(7)
-                });
-                employees.push(newUser.id);
+                })
+                .then(newUser => employees.push(newUser.id));
             });
         }));
 
@@ -61,11 +70,6 @@ export const actions = {
         });
 
         throw redirect(303, '/');
-    },
-
-    delete: async ({ params, locals }) => {
-        await locals.pb.collection('workplace').delete(params.id);
-        throw redirect(303, '/');
     }
 };
 
@@ -77,6 +81,6 @@ async function calculate_free_spot(params, locals) {
             expand: 'employees'
         });
         const this_total = (workplace?.expand?.employees?.length || 0);
-        return { free_spot: locals.user.max_employees - (locals.user.current_employees - this_total), workplace };
+        return { workplace, free_spot: locals.user.max_employees - (locals.user.current_employees - this_total) };
     }
 }

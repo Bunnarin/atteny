@@ -130,7 +130,7 @@
     }
 </script>
 
-{#if data.id && data.id != "new"}
+{#if data.workplace}
 <div class="form-actions">
     <form action="?/delete" method="POST" on:submit={(e) => { if (!confirm('delete?')) e.preventDefault() }}>
         <button class="btn-primary" type="submit">Delete</button>
