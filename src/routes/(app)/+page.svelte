@@ -242,8 +242,12 @@
 
         <form action="?/request_leave" method="POST">
             <input type="hidden" name="workplace_id" value={selectedWorkplaceId} />
-            Date: <input type="date" id="date" name="date" bind:value={date} required min={new Date().toISOString().split('T')[0]} />
-            Reason: <textarea id="reason" name="reason" bind:value={reason} required maxlength="255"></textarea>
+            <div class="form-question">
+                Date: <input type="date" id="date" name="date" bind:value={date} required min={new Date().toISOString().split('T')[0]} />
+            </div>
+            <div class="form-question">
+                Reason: <input type="text" id="reason" name="reason" bind:value={reason} required maxlength="255"/>
+            </div>
             <button type="submit">Submit Request</button>
         </form>
     </div>

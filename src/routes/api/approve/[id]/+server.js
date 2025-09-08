@@ -17,10 +17,11 @@ export const POST = async ({ locals, params }) => {
     oauthClient.credentials.refresh_token = workspace.expand.employer.google_refresh_token;
     const doc = new GoogleSpreadsheet(workspace.file_id, oauthClient);
     await doc.loadInfo();
-    const log = [request.date, "P", request.expand.createdBy.full_name];
+    const log = [request.date.slice(0, 10), "P", request.expand.createdBy.full_name];
     let sheet = doc.sheetsByTitle[workspace.name + ' log'];
     if (!sheet) sheet = await doc.addSheet({ title: `${workspace.name} log`, headerValues: ['Date', 'Time', 'Name'] });
     sheet.addRow(log);
     // delete the request
     await locals.pb.collection('request').delete(params.id);
+    return new Response(JSON.stringify({ message: 'Request approved successfully' }));
 }
