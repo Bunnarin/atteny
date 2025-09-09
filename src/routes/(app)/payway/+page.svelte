@@ -28,6 +28,7 @@
     </div>
 
     <script src="https://checkout.payway.com.kh/plugins/checkout2-0.js"></script>
+    <link rel="stylesheet" href="https://payway.ababank.com/checkout-popup.html?file=css"/>
     <script>
         document.getElementById('checkout_button').addEventListener('click', function() {
             AbaPayway.checkout();

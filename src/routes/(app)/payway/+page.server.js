@@ -9,8 +9,8 @@ export const actions = {
         const req_time = Math.floor(Date.now() / 1000).toString();
         const merchant_id = PUBLIC_MERCHANT_ID;
         const tran_id = req_time;
-        const payment_option = "cards";
-
+        const payment_option = 'cards';
+        const view_type = "hosted_view";
 
         const hashStr = req_time + merchant_id + tran_id + amount + payment_option;
         console.table({ amount, req_time, merchant_id, hashStr, PAYWAY_KEY });
@@ -23,7 +23,8 @@ export const actions = {
             amount,
             merchant_id,
             req_time,
-            payment_option
+            payment_option,
+            view_type
         };
     }
 }
