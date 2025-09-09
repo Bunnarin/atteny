@@ -20,7 +20,6 @@ export const actions = {
             title: "employee",
             amount: amount,
             currency: "USD",
-            payment_limit: 1,
             expired_date: null, 
             return_url: url.origin + '/payway/callback',
             payout: JSON.stringify({
@@ -30,14 +29,11 @@ export const actions = {
             hash: ""
         };
 
-        // Encrypt with RSA public key
-        // extract these filed and create a object
+        // Encrypt with RSA public key (only for the payment link api)
         const mc_auth_obj = {};
         for (const field of [
             'mc_id', 'title', 'amount', 'currency', 'description', 'payment_limit', 'expired_date', 'return_url', 'merchant_ref_no', 'payout'
-        ]) {
-            mc_auth_obj[field] = formFields[field] || "";
-        }
+        ]) mc_auth_obj[field] = formFields[field] || "";
         const key = new NodeRSA();
         key.importKey(RSA_PUBLIC_KEY, 'public');
         formFields.merchant_auth = key.encrypt(JSON.stringify(mc_auth_obj), 'base64');
@@ -52,10 +48,8 @@ export const actions = {
 
         // Convert to FormData
         const formData = new FormData();
-        Object.entries(formFields).forEach(([key, value]) => {
-            formData.append(key, value);
-        });
-
+        Object.entries(formFields).forEach(([key, value]) => formData.append(key, value));
+        console.log(formData);
         const requestOptions = {
             method: 'POST',
             headers: myHeaders,

@@ -17,6 +17,9 @@ importers:
       google-spreadsheet:
         specifier: ^5.0.2
         version: 5.0.2(google-auth-library@10.3.0)
+      js-cookie:
+        specifier: ^3.0.5
+        version: 3.0.5
       leaflet:
         specifier: ^1.9.4
         version: 1.9.4
@@ -1684,6 +1687,10 @@ packages:
     resolution: {integrity: sha512-wpHYzhxiVQL+IV05BLE2Xn34zW1S223hvjtqk0+gsPrwd/8JNLXJgZZM/iPFsYc1xyphF+6M6EvdE5E9MBGkDA==}
     engines: {node: '>=10'}
     hasBin: true
+
+  js-cookie@3.0.5:
+    resolution: {integrity: sha512-cEiJEAEoIbWfCZYKWhVwFuvPX1gETRYPw6LlaTKoxD3s2AkXzkCjnp6h0V77ozyqj0jakteJ4YqDJT830+lVGw==}
+    engines: {node: '>=14'}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -4402,6 +4409,8 @@ snapshots:
       async: 3.2.6
       filelist: 1.0.4
       picocolors: 1.1.1
+
+  js-cookie@3.0.5: {}
 
   js-tokens@4.0.0: {}
 
