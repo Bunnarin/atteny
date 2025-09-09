@@ -4,20 +4,20 @@ export const load = async ({ params, locals }) => calculate_free_spot(params, lo
 
 export const actions = {
     delete: async ({ params, locals }) => {
-        // for each employees that is unverified, delete them
         const workplace = await locals.pb.collection('workplace').getOne(params.id, {expand: 'employees'})
-            .then(workplace => workplace.expand?.employees?.forEach((user) => {
-                if (!user.verified) locals.pb.collection('users').delete(user.id);
-            }));
-        // deduct the current_employees from the user
+        // for each employees that is unverified, delete them
+        workplace.expand?.employees?.forEach(user => {
+            if (!user.verified) locals.pb.collection('users').delete(user.id);
+        });        
+        // release the free_spots
         locals.user = await locals.pb.collection('users').update(locals.user.id, {
-            current_employees: locals.user.current_employees - workplace.employees?.length
+            free_spots: locals.user.free_spots + workplace.expand?.employees?.length
         });
         locals.pb.collection('workplace').delete(params.id);
         throw redirect(303, '/');
     },
     upsert: async ({ request, params, locals }) => {
-        const { workplace, current_employee_without_this_workplace } = await calculate_free_spot(params, locals);
+        const { workplace, free_spots } = await calculate_free_spot(params, locals);
         const initial_emails = workplace?.expand?.employees?.map(e => e.email) || [];
 
         const data = await request.formData();
@@ -65,27 +65,23 @@ export const actions = {
         if (params.id == 'new') await locals.pb.collection('workplace').create(workplace_fixture);
         else await locals.pb.collection('workplace').update(params.id, workplace_fixture);
 
-        // update the user's current_employees
+        // update the user's free_spots
         locals.user = await locals.pb.collection('users').update(locals.user.id, {
-            current_employees: current_employee_without_this_workplace + emails.length
+            free_spots: free_spots + emails.length
         });
         throw redirect(303, '/');
     }
 };
 
 async function calculate_free_spot(params, locals) {
-    if (params.id == "new") {
-        return { free_spot: locals.user.max_employees - locals.user.current_employees, 
-            current_employee_without_this_workplace: locals.user.current_employees };
-    } else {
-        const workplace = await locals.pb.collection('workplace').getOne(params.id, {
-            expand: 'employees'
-        });
-        const initial_total = (workplace?.expand?.employees?.length || 0);
-        const current_employee_without_this_workplace = locals.user.current_employees - initial_total;
-        return { workplace, 
-            free_spot: locals.user.max_employees - current_employee_without_this_workplace, 
-            current_employee_without_this_workplace 
-        };
-    }
+    if (params.id == "new") 
+        return { free_spots: locals.user.free_spots };
+    
+    const workplace = await locals.pb.collection('workplace').getOne(params.id, {
+        expand: 'employees'
+    });
+    return { 
+        workplace,
+        free_spots: locals.user.free_spots - workplace.expand.employees.length 
+    };
 }

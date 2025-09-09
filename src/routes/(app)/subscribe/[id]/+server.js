@@ -5,11 +5,9 @@ export const GET = async ({ locals, params }) => {
     if (!locals.user) {
         throw redirect(302, '/login?redirect=/subscribe/' + params.id);
     }
-    locals.pb.collection('workplace').update(
-        params.id,
-        {
-            'employees+': locals.user.id
-        }
-    );
+    await locals.pb.send(`/subscribe/${params.id}`, {
+        method: "POST",
+        headers: { Accept: "application/json" }
+    });
     throw redirect(302, '/');
 }

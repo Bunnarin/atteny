@@ -109,7 +109,7 @@
     }
 
     function addEmail(event) {
-        if (event.key !== 'Enter' || emails.length >= data.free_spot)
+        if (event.key !== 'Enter' || emails.length >= data.free_spots)
             return;
         event.preventDefault();
         if (emails.includes(currentEmail.trim()) || !currentEmail.includes('@'))
@@ -170,15 +170,15 @@
     <input type="hidden" name="rules" value={JSON.stringify(rules)} />
 
     <div class="form-question">
-        <label class="question-title" for="email">Remaining: {Math.max(0, data.free_spot - emails.length)} of {data.free_spot}</label>
+        <label class="question-title" for="email">Remaining: {Math.max(0, data.free_spots - emails.length)} of {data.free_spots}</label>
         <input
             class="question-input"
             id="email"
             type="email"
             bind:value={currentEmail}
             on:keydown={addEmail}
-            placeholder={emails.length >= data.free_spot ? 'No more spots available' : 'Enter email address and press Enter'}
-            readonly={emails.length >= data.free_spot}
+            placeholder={emails.length >= data.free_spots ? 'No more spots available' : 'Enter email address and press Enter'}
+            readonly={emails.length >= data.free_spots}
         />
         {#each emails as email, index}
         <span class="employee-item">
@@ -186,6 +186,15 @@
             {email}
         </span>
     {/each}
+    </div>
+
+    <div class="form-section">
+        <h2>Select Location</h2>
+        <div id="map" class="map-container" style="position: relative;">
+            <button type="button" class="center-button" on:click|stopPropagation={() => map.setView([userLat, userLon], 13)}>
+                <img src="/center.png" alt="center"/>
+            </button>
+        </div>
     </div>
 
     <div class="form-question">
@@ -206,15 +215,6 @@
             </div>
         {/each}
         <button class="btn-secondary" type="button" on:click={() => rules = [...rules, {s: '01:00', e: '23:59'}]}>Add Time Window</button>
-    </div>
-
-    <div class="form-section">
-        <h2>Select Location</h2>
-        <div id="map" class="map-container" style="position: relative;">
-            <button type="button" class="center-button" on:click|stopPropagation={() => map.setView([userLat, userLon], 13)}>
-                <img src="/center.png" alt="center"/>
-            </button>
-        </div>
     </div>
 
     <div class="form-actions">
