@@ -15,11 +15,9 @@
     </form>
 {:else}
     <form method="POST" target="aba_webservice" action={PUBLIC_PAYWAY_ENDPOINT} id="aba_merchant_request">
-        <input type="hidden" name="hash" value={form.hash} />
-        <input type="hidden" name="tran_id" value={form.tran_id} />
-        <input type="hidden" name="amount" value={form.amount} />
-        <input type="hidden" name="merchant_id" value={form.merchant_id} />
-        <input type="hidden" name="req_time" value={form.req_time} />
+        {#each Object.entries(form) as [key, value]}
+            <input type="hidden" name={key} value={value} />
+        {/each}
     </form>
 
     <div class="container" style="margin-top: 75px;margin: 0 auto;">

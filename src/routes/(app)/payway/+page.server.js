@@ -8,20 +8,22 @@ export const actions = {
         const amount = formData.get('amount');
         const req_time = Math.floor(Date.now() / 1000).toString();
         const merchant_id = PUBLIC_MERCHANT_ID;
-        const transactionId = req_time;
+        const tran_id = req_time;
+        const payment_option = "cards";
 
 
-        const hashStr = req_time + merchant_id + transactionId + amount;
+        const hashStr = req_time + merchant_id + tran_id + amount + payment_option;
         console.table({ amount, req_time, merchant_id, hashStr, PAYWAY_KEY });
 
         const hash = createHmac('sha512', PAYWAY_KEY).update(hashStr).digest('base64');
 
         return {
             hash,
-            tran_id: transactionId,
+            tran_id,
             amount,
             merchant_id,
-            req_time
+            req_time,
+            payment_option
         };
     }
 }
