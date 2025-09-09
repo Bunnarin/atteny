@@ -1,65 +1,27 @@
 import { PUBLIC_MERCHANT_ID, PUBLIC_PAYWAY_ENDPOINT, PUBLIC_PAYOUT_ACCOUNT } from '$env/static/public';
 import { PAYWAY_KEY, RSA_PUBLIC_KEY } from '$env/static/private';
 import { createHmac } from 'crypto';
-import NodeRSA from 'node-rsa';
 
 export const actions = {
     default: async ({ url, request }) => {
-        // get the formdata
-        const data = await request.formData();
-        const amount = data.get('amount')?.toString();
-        const myHeaders = new Headers();
-        myHeaders.append("Content-Type", "multipart/form-data");
+        const formData = await request.formData();
+        const amount = formData.get('amount');
+        const req_time = Math.floor(Date.now() / 1000).toString();
+        const merchant_id = PUBLIC_MERCHANT_ID;
+        const transactionId = req_time;
 
-        // Define all form fields in a single object
-        const formFields = {
-            request_time: new Date().toISOString().replace(/[\s:T.-]/g, '').slice(0, 14),
-            merchant_id: PUBLIC_MERCHANT_ID,
-            merchant_auth: '',
-            mc_id: PUBLIC_MERCHANT_ID,
-            title: "employee",
-            amount: amount,
-            currency: "USD",
-            expired_date: null, 
-            return_url: url.origin + '/payway/callback',
-            payout: JSON.stringify({
-                acc: PUBLIC_PAYOUT_ACCOUNT,
-                amt: amount
-            }),
-            hash: ""
+
+        const hashStr = req_time + merchant_id + transactionId + amount;
+        console.table({ amount, req_time, merchant_id, hashStr, PAYWAY_KEY });
+
+        const hash = createHmac('sha512', PAYWAY_KEY).update(hashStr).digest('base64');
+
+        return {
+            hash,
+            tran_id: transactionId,
+            amount,
+            merchant_id,
+            req_time
         };
-
-        // Encrypt with RSA public key (only for the payment link api)
-        const mc_auth_obj = {};
-        for (const field of [
-            'mc_id', 'title', 'amount', 'currency', 'description', 'payment_limit', 'expired_date', 'return_url', 'merchant_ref_no', 'payout'
-        ]) mc_auth_obj[field] = formFields[field] || "";
-        const key = new NodeRSA();
-        key.importKey(RSA_PUBLIC_KEY, 'public');
-        formFields.merchant_auth = key.encrypt(JSON.stringify(mc_auth_obj), 'base64');
-
-        // Create the hash string in the required order
-        const hashString = [
-            'request_time', 'merchant_id', 'merchant_auth'
-        ].map(field => formFields[field] || '').join('');
-        formFields.hash = createHmac('sha512', PAYWAY_KEY)
-            .update(hashString)
-            .digest('base64');
-
-        // Convert to FormData
-        const formData = new FormData();
-        Object.entries(formFields).forEach(([key, value]) => formData.append(key, value));
-        console.log(formData);
-        const requestOptions = {
-            method: 'POST',
-            headers: myHeaders,
-            body: formData,
-            redirect: 'follow'
-        };
-
-        fetch(PUBLIC_PAYWAY_ENDPOINT, requestOptions)
-            .then(response => response.text())
-            .then(result => console.log(result))
-            .catch(err => console.error(err));
     }
 }
