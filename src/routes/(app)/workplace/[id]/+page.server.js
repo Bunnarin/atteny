@@ -67,7 +67,7 @@ export const actions = {
 
         // update the user's free_spots
         locals.user = await locals.pb.collection('users').update(locals.user.id, {
-            free_spots: free_spots + emails.length
+            free_spots: free_spots - emails.length
         });
         throw redirect(303, '/');
     }
@@ -80,8 +80,9 @@ async function calculate_free_spot(params, locals) {
     const workplace = await locals.pb.collection('workplace').getOne(params.id, {
         expand: 'employees'
     });
+    console.log(locals.user.free_spots);
     return { 
         workplace,
-        free_spots: locals.user.free_spots - workplace.expand.employees.length 
+        free_spots: locals.user.free_spots + workplace.expand.employees.length 
     };
 }

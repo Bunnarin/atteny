@@ -170,7 +170,7 @@
     <input type="hidden" name="rules" value={JSON.stringify(rules)} />
 
     <div class="form-question">
-        <label class="question-title" for="email">Remaining: {Math.max(0, data.free_spots - emails.length)} of {data.free_spots}</label>
+        <label class="question-title" for="email">Remaining: {emails.length} of {data.free_spots}</label>
         <input
             class="question-input"
             id="email"

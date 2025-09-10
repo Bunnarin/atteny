@@ -13,8 +13,6 @@ export const actions = {
         const view_type = "hosted_view";
 
         const hashStr = req_time + merchant_id + tran_id + amount + payment_option;
-        console.table({ amount, req_time, merchant_id, hashStr, PAYWAY_KEY });
-
         const hash = createHmac('sha512', PAYWAY_KEY).update(hashStr).digest('base64');
 
         return {

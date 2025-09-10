@@ -3,11 +3,8 @@ import { redirect } from "@sveltejs/kit";
 export const GET = async ({ locals, params }) => {
     // if not authenitcalted, redirect to login, and then come back here
     if (!locals.user) {
-        throw redirect(302, '/login?redirect=/subscribe/' + params.id);
+        throw redirect(302, `/login?redirect=/subscribe/${params.id}`);
     }
-    await locals.pb.send(`/subscribe/${params.id}`, {
-        method: "POST",
-        headers: { Accept: "application/json" }
-    });
+    await locals.pb.send(`/subscribe/${params.id}`, {method: "POST"});
     throw redirect(302, '/');
 }

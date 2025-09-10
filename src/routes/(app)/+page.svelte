@@ -3,6 +3,7 @@
     import { onMount } from 'svelte';
     import { page } from '$app/stores';
     
+    
     export let data;
 
     let locationError = '';
