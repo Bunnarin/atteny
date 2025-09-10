@@ -253,7 +253,7 @@
 {/if}
 
 {#if showLeaveModal}
-<div class="modal-overlay" on:click|self={() => showLeaveModal = false}>
+<div class="modal-overlay">
     <div class="modal-content">
         <h3>Request Leave</h3>
         
@@ -274,6 +274,7 @@
                 Reason: <input type="text" id="reason" name="reason" bind:value={reason} required maxlength="255"/>
             </div>
             <button type="submit">Submit Request</button>
+            <button type="button" on:click={() => showLeaveModal = false}>Cancel</button>
         </form>
     </div>
 </div>

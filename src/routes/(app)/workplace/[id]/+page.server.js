@@ -1,4 +1,5 @@
 import { redirect } from '@sveltejs/kit';
+import { PUBLIC_FREE_TIER } from '$env/static/public';
 
 export const load = async ({ params, locals }) => calculate_free_spot(params, locals);
 
@@ -42,7 +43,7 @@ export const actions = {
                     emailVisibility: true,
                     password: password,
                     passwordConfirm: password,
-                    max_employees: 10,
+                    free_spots: PUBLIC_FREE_TIER,
                     ip_address: (Math.random() + 1).toString(36).substring(7)
                 })
                 .then(newUser => employees.push(newUser.id));
@@ -80,7 +81,6 @@ async function calculate_free_spot(params, locals) {
     const workplace = await locals.pb.collection('workplace').getOne(params.id, {
         expand: 'employees'
     });
-    console.log(locals.user.free_spots);
     return { 
         workplace,
         free_spots: locals.user.free_spots + workplace.expand.employees.length 
