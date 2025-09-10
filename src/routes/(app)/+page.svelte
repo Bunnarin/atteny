@@ -2,8 +2,12 @@
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
     import { page } from '$app/stores';
-    
-    
+    import { writable, get } from 'svelte/store';
+
+    // Store for clock-in statuses
+    const clockInStatuses = writable({});
+
+
     export let data;
 
     let locationError = '';
@@ -19,6 +23,19 @@
 
     // Add error message state
     $: errorMessage = $page.url.searchParams.get('message');
+
+    // Load clock-in statuses from localStorage
+    function loadClockInStatuses() {
+        if (typeof window === 'undefined') return;
+        const statuses = {};
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+            if (key.startsWith('clockin_')) {
+                statuses[key] = localStorage.getItem(key) === 'true';
+            }
+        });
+        clockInStatuses.set(statuses);
+    }
 
     // Clean up old localStorage entries (older than 30 days)
     function cleanupOldClockIns() {
@@ -39,6 +56,8 @@
                 }
             }
         });
+        // Reload statuses after cleanup
+        loadClockInStatuses();
     }
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -58,11 +77,11 @@
         return deg * (Math.PI / 180);
     }
 
-    function hasClockedInToday(workplaceId, windowIndex) {
+    function hasClockedInToday(workplaceId, windowIndex, statuses) {
         if (typeof window === 'undefined') return false;
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
         const key = `clockin_${workplaceId}_${today}_${windowIndex}`;
-        return localStorage.getItem(key) === 'true';
+        return statuses[key] === true;
     }
 
     function recordClockIn(workplaceId, windowIndex) {
@@ -70,9 +89,13 @@
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
         const key = `clockin_${workplaceId}_${today}_${windowIndex}`;
         localStorage.setItem(key, 'true');
+        clockInStatuses.update(statuses => {
+            statuses[key] = true;
+            return statuses;
+        });
     }
 
-    function isWithinTimeWindow(workplaceId, rules) {
+    function isWithinTimeWindow(workplaceId, rules, statuses) {
         if (!rules || rules.length === 0) {
             return { allowed: true, windowIndex: -1 }; // 24/7 access if no rules
         }
@@ -99,7 +122,7 @@
 
             if (isInWindow) {
                 // Check if already clocked in for this window today
-                if (hasClockedInToday(workplaceId, i))
+                if (hasClockedInToday(workplaceId, i, statuses))
                     return { allowed: false, windowIndex: i, reason: 'already_clocked_in' };
                 return { allowed: true, windowIndex: i };
             }
@@ -110,7 +133,7 @@
 
     function clockIn(workplace) {
         // Check time restrictions first
-        const timeCheck = isWithinTimeWindow(workplace.id, workplace.rules);
+        const timeCheck = isWithinTimeWindow(workplace.id, workplace.rules, get(clockInStatuses));
         if (!timeCheck.allowed) {
             if (timeCheck.reason === 'already_clocked_in') {
                 alert('You have already clocked in for this time window today.');
@@ -167,6 +190,7 @@
     // Clean up old localStorage entries on component mount
     onMount(() => {
         cleanupOldClockIns();
+        loadClockInStatuses();
     });
 </script>
 
@@ -215,7 +239,7 @@
             <button
                 class="btn-primary"
                 on:click={() => clockIn(workplace)}
-                disabled={!isWithinTimeWindow(workplace.id, workplace.rules).allowed}
+                disabled={!isWithinTimeWindow(workplace.id, workplace.rules, $clockInStatuses).allowed}
             >
                 {#if clockingIn && !locationError && !successMessage}
                     Clocking In...
