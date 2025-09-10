@@ -19,19 +19,8 @@
             <input type="hidden" name={key} value={value} />
         {/each}
     </form>
-
-    <div class="container" style="margin-top: 75px;margin: 0 auto;">
-        <div style="width: 200px;margin: 0 auto;">
-            <h2>TOTAL: ${form.amount}</h2>
-            <input type="button" id="checkout_button" value="Checkout Now">
-        </div>
-    </div>
-
-    <script src="https://checkout.payway.com.kh/plugins/checkout2-0.js"></script>
-    <link rel="stylesheet" href="https://payway.ababank.com/checkout-popup.html?file=css"/>
+    <!-- submit this form on load -->
     <script>
-        document.getElementById('checkout_button').addEventListener('click', function() {
-            AbaPayway.checkout();
-        });
+        document.getElementById('aba_merchant_request').submit();
     </script>
 {/if}
