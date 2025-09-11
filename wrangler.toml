@@ -3,7 +3,7 @@ main = "./build/worker.js"
 compatibility_date = "2024-04-01"
 
 [env.production]
-name = "atteny-production"
+name = "atteny-prod"
 route = "atteny.popok.uk/*"
 
 [assets]
