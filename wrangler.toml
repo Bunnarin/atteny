@@ -8,11 +8,4 @@ route = "atteny.popok.uk/*"
 
 [assets]
 directory = ".svelte-kit/output/"
-
-[vars]
-PUBLIC_PB_URL="https://atteny-backend.popok.uk"
-PUBLIC_UNIT_PRICE=5
-PUBLIC_FREE_TIER=5
-# google
-PUBLIC_GOOGLE_CLIENT_ID='530631853241-d9bm5q01d2kbc158t3od6oo5ga389j1r.apps.googleusercontent.com'
-PUBLIC_GOOGLE_PROJECT_NUMBER='530631853241'
+binding = "ASSETS"
