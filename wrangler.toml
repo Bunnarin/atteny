@@ -6,8 +6,11 @@ compatibility_date = "2024-04-01"
 name = "atteny-production"
 route = "atteny.popok.uk/*"
 
+[assets]
+directory = ".svelte-kit/output/"
+
 [vars]
-PUBLIC_PB_URL="http://127.0.0.1:8090"
+PUBLIC_PB_URL="https://atteny-backend.popok.uk"
 PUBLIC_UNIT_PRICE=5
 PUBLIC_FREE_TIER=5
 # google
