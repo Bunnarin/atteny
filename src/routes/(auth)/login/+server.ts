@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { PUBLIC_REDIRECT_URI, PUBLIC_FREE_TIER } from '$env/static/public';
+import { PUBLIC_FREE_TIER } from '$env/static/public';
 
 export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddress }) => {
 	if (url.searchParams.has('code')) {
@@ -31,7 +31,7 @@ export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddre
 				provider.name, 
 				code, 
 				provider.codeVerifier, 
-				PUBLIC_REDIRECT_URI,
+				url.origin + "/login",
 				{ 
 					free_spots: PUBLIC_FREE_TIER, 
 					emailVisibility: true,
@@ -67,7 +67,7 @@ export const GET: RequestHandler = async ({ cookies, locals, url, getClientAddre
 		const urlObj = new URL(authUrl);
 		
 		// Set the base redirect_uri without any query parameters
-		const baseRedirectUri = new URL(PUBLIC_REDIRECT_URI);
+		const baseRedirectUri = new URL(url.origin + "/login");
 		
 		// Add the redirect parameter to the state parameter instead of redirect_uri
 		const state = redirectTo 

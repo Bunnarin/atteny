@@ -40,7 +40,12 @@ export const POST = async ({ request, locals }) => {
         const log = [timestamp.slice(0, 10), timestamp.slice(11, 16), locals.user.full_name];
         let sheet = doc.sheetsByTitle[workplace.name + ' log'];
         if (!sheet) sheet = await doc.addSheet({ title: `${workplace.name} log`, headerValues: ['Date', 'Time', 'Name'] });
-        sheet.addRow(log);
+        try {
+            sheet.addRow(log);
+        } catch { // it doesnt have header
+            sheet.setHeaderRow(["date", "time", "name"]);
+            sheet.addRow(log);
+        }
         return new Response(JSON.stringify({ message: 'Clock-in successful' }));
     } catch (error) {
         return new Response(JSON.stringify({ error: 'Clock-in failed' }), { status: 500 });

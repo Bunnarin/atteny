@@ -8,7 +8,8 @@
 {#if !form}
     <form method="POST">
         <div class="form-question">
-            <label class="question-title" for="amount">{PUBLIC_UNIT_PRICE}$ per employee (pay once free forever):</label>
+            {PUBLIC_UNIT_PRICE}$ per employee (pay once free forever)
+            <label class="question-title" for="amount">how many employees?</label>
             <input class="question-input" type="number" name="amount" min="1" required />
         </div>
         <button class="btn-primary" type="submit">Pay</button>
@@ -19,8 +20,8 @@
             <input type="hidden" name={key} value={value} />
         {/each}
     </form>
-    <!-- submit this form on load -->
     <script>
+        // submit on load
         document.getElementById('aba_merchant_request').submit();
     </script>
 {/if}
