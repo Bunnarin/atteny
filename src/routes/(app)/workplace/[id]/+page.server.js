@@ -52,7 +52,7 @@ export const actions = {
 
         const workplace_fixture = {
             name: data.get('name')?.toString(),
-            proximity: data.get('proximity')?.toString(),
+            proximity: parseInt(data.get('proximity')?.toString()),
             employer: locals.user.id,
             employees: employees,
             location: {

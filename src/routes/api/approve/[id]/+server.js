@@ -17,9 +17,10 @@ export const POST = async ({ locals, params }) => {
     oauthClient.credentials.refresh_token = workspace.expand.employer.google_refresh_token;
     const doc = new GoogleSpreadsheet(workspace.file_id, oauthClient);
     await doc.loadInfo();
-    const log = [request.date.slice(0, 10), request.reason, request.expand.createdBy.full_name];
+    const date = request.date.toString().slice(0, 10);
+    const log = [date, request.reason, request.expand.createdBy.full_name];
     let sheet = doc.sheetsByTitle[workspace.name + ' leave log'];
-    if (!sheet) sheet = await doc.addSheet({ title: `${workspace.name} leave log`, headerValues: ['Date', 'Time', 'Name'] });
+    if (!sheet) sheet = await doc.addSheet({ title: `${workspace.name} leave log`, headerValues: ['Date', 'Reason', 'Name'] });
     try {
         sheet.addRow(log);
     } catch { // it doesnt have header
